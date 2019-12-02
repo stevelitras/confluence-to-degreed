@@ -1,0 +1,477 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+
+
+Transform: AWS::Serverless-2016-10-31
+
+
+Description: 'CICD pipeline stack'
+
+
+Parameters:
+
+  CfnDeployBucket:
+    Type: String
+    Description: 'CloudFormation deployment artifacts bucket'
+
+  SSMPathRoot:
+    Type: String
+
+  Git2S3StackName:
+    Type: String
+    Description: 'The name of the git2s3 stack that this stack depends on (used to import resources)'
+
+  GitBranch:
+    Type: String
+    Description: 'The git repo branch that will kick off the pipeline when commited to'
+    Default: 'master'
+
+  VpcId:
+    Description: VPC to Run this from
+    Type: AWS::EC2::VPC::Id
+
+  Subnets:
+    Description: Subnet IDs to run from
+    Type: List<AWS::EC2::Subnet::Id>
+
+  InetSubnets:
+    Description: Internet Load Balancer Subnets
+    Type: List<AWS::EC2::Subnet::Id>
+
+  TemplateFile:
+    Description: The ARN for the SNS topic to notify on alarms.
+    Type: String
+
+  TopicArn:
+    Description: The ARN for the SNS topic to notify on alarms.
+    Type: String
+
+  MonikerPrefix:
+    Description: 'The prefix of the moniker'
+    Type: String
+
+  ServiceStackName:
+    Type: String
+    Description: 'The name of the service stack name the pipeline will deploy (with "-$env" at the end)'
+
+  AwsAccountId:
+    Type: String
+    Description: Account Id
+
+  FinalStackName:
+    Type: String
+    Description: Build Stack Name
+
+
+Conditions:
+
+  SendUsageData: !Equals [ !FindInMap ['UsageData', 'Data', 'SendUsageData'], true ]
+
+
+Mappings:
+
+  # The usage data collected is for the DES Tools Team to provide us with some
+  # statistics on who is using our solutions. The data we are collecting is:
+  # AWS account Id, stack ARN, SolutionId and the Version.
+  # For more info: https://git.autodesk.com/AWS-Deployment-Tools/cfn-usage-data
+  UsageData:
+    Data:
+      APIEndpoint: 'https://cfn-usage-data-api.engineering-services.autodesk.com'
+      SolutionId: 2  # internal solutionId used to distinguish between solutions
+      Version: 1  # the version of the solution
+      SendUsageData: true  # set to 'false' if you do not want to send usage data
+
+
+Resources:
+
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+      ManagedPolicyArns:
+        - !Ref 'CFNPipelinePolicy'
+      Policies:
+        - PolicyName: CodeBuildAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Resource:
+                  - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-*'
+                  - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-*:*'
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+              - Effect: Allow
+                Resource:
+                  Fn::Sub:
+                    - 'arn:aws:s3:::${BucketName}/*'
+                    - BucketName:
+                        Fn::ImportValue:
+                          !Sub '${Git2S3StackName}-OutputBucketName'
+                Action:
+                  - 's3:GetObject'
+                  - 's3:GetObjectVersion'
+                  - 's3:PutObject'
+              - Effect: Allow
+                # This statement is to allow deploy pre-processing actions (discover AWS account, region, VPC, subnets)
+                Resource: '*'
+                Action:
+                  - 'ec2:DescribeNatGateways'
+                  - 'ec2:DescribeSubnets'
+                  - 'ec2:DescribeVpcs'
+                  - 'ec2:*'
+                  - 'acm:*'
+                  - 'iam:ListRoles'
+                  - 'iam:PassRole'
+              - Effect: Allow
+                # This statement is to allow deploy pre-processing actions (create and access CloudFormation deploy artifacts bucket)
+                Resource:
+                  - !Sub 'arn:aws:s3:::${CfnDeployBucket}'
+                  - !Sub 'arn:aws:s3:::${CfnDeployBucket}/*'
+                Action:
+                  - 's3:CreateBucket'
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+              - Effect: Allow
+                Action:
+                  - "ecr:CreateRepository"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:CompleteLayerUpload"
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:InitiateLayerUpload"
+                  - "ecr:PutImage"
+                  - "ecr:UploadLayerPart"
+                  - "ecs:UpdateService"
+                Resource: "*"
+
+  # CodePipeline definition and required roles
+  CFNPipelinePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: CloudFormation Pipeline Execution Policy
+      Path: '/'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Action:
+            - 'cloudformation:CreateStack'
+            - 'cloudformation:DescribeStacks'
+            - 'cloudformation:DeleteStack'
+            - 'cloudformation:UpdateStack'
+            - 'cloudformation:CreateChangeSet'
+            - 'cloudformation:ExecuteChangeSet'
+            - 'cloudformation:DeleteChangeSet'
+            - 'cloudformation:DescribeChangeSet'
+            - 'cloudformation:SetStackPolicy'
+            - 'cloudformation:SetStackPolicy'
+            - 'cloudformation:ValidateTemplate'
+            - 'cloudformation:GetTemplateSummary'
+            - 'codebuild:StartBuild'
+            - 'codebuild:BatchGetBuilds'
+          Resource: '*'
+
+  PipelineExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+            - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+        - !Ref 'CFNPipelinePolicy'
+      Policies:
+        - PolicyName: !Sub '${AWS::StackName}-CodePipelineAccess'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                - 'iam:PassRole'
+                - 'lambda:InvokeFunction'
+                - 'lambda:ListFunctions'
+                - 'lambda:InvokeAsyc'
+                Effect: Allow
+                Resource: '*'
+
+  PipelineCodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${AWS::StackName}-pipeline-build'
+      Description: Build project for deployment pipeline
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/python:3.7.1
+        EnvironmentVariables:
+          - Name: AWS_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AwsAccountId
+          - Name: DEPLOY_BUCKET
+            Value: !Ref CfnDeployBucket
+          - Name: MONIKER_PREFIX
+            Value: !Ref MonikerPrefix
+          - Name: STACK_NAME
+            Value: !Ref AWS::StackName
+          - Name: FINAL_STACK_NAME
+            Value: !Ref FinalStackName
+          - Name: TOPICARN
+            Value: !Ref TopicArn
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: pipeline_deploy_spec.yml
+
+  AppCodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${AWS::StackName}-app-build'
+      Description: Build project for example api
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/python:3.7.1
+        EnvironmentVariables:
+          - Name: AWS_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AwsAccountId
+          - Name: DEPLOY_BUCKET
+            Value: !Ref CfnDeployBucket
+          - Name: MONIKER_PREFIX
+            Value: !Ref MonikerPrefix
+          - Name: INETSUBNETS
+            Value: !Join [',', !Ref 'InetSubnets']
+          - Name: SERVICE_STACK_NAME
+            Value: !Ref ServiceStackName
+          - Name: SSMPATHROOT
+            Value: !Ref SSMPathRoot
+          - Name: TEMPLATE_FILE
+            Value: !Ref TemplateFile
+          - Name: TOPICARN
+            Value: !Ref TopicArn
+          - Name: SUBNETS
+            Value: !Join [',', !Ref 'Subnets']
+          - Name: VPCID
+            Value: !Ref VpcId
+          - Name: STACK_NAME
+            Value: !Ref AWS::StackName
+          - Name: FINAL_STACK_NAME
+            Value: !Ref FinalStackName
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: app_deploy_spec.yml
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Location:
+          Fn::ImportValue:
+            !Sub ${Git2S3StackName}-OutputBucketName
+        Type: S3
+      Name: !Sub '${AWS::StackName}-pipeline'
+      RoleArn: !GetAtt 'PipelineExecutionRole.Arn'
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: DownloadCodeZip
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: S3
+                Version: '1'
+              Configuration:
+                S3Bucket:
+                  Fn::ImportValue:
+                    !Sub ${Git2S3StackName}-OutputBucketName
+                S3ObjectKey:
+                  Fn::Sub:
+                    - '${RepoName}/branch/${GitBranch}/bundle.zip'
+                    - RepoName:
+                        Fn::ImportValue:
+                          !Sub '${Git2S3StackName}-GitRepoName'
+              OutputArtifacts:
+                - Name: SourceZip
+              RunOrder: 1
+        # Update the pipeline stack here if changes affecting pipeline resources were commited. Doing it here doesn't require manual management of the pipeline stack.
+        - Name: pipeline-update
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref 'PipelineCodeBuildProject'
+              InputArtifacts:
+                - Name: SourceZip
+              RunOrder: 1
+        - Name: app-build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref 'AppCodeBuildProject'
+              InputArtifacts:
+                - Name: SourceZip
+              OutputArtifacts:
+                - Name: AppBuildOutput
+              RunOrder: 1
+        - Name: test-app-deploy
+          Actions:
+            - Name: CreateChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                Capabilities: CAPABILITY_IAM
+                ChangeSetName: !Sub '${ServiceStackName}-changeset-test'
+                RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/AdskCfnAdministratorAccessExecutionRole'  # ADSK managed role to deploy cloudformation
+                StackName: !Sub '${ServiceStackName}-test'
+                TemplateConfiguration: AppBuildOutput::test-app-parameters.json.tmp
+                TemplatePath: AppBuildOutput::app-sam-output.yaml.tmp
+              InputArtifacts:
+                - Name: AppBuildOutput
+              RunOrder: 1
+            - Name: ExecuteChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                ChangeSetName: !Sub '${ServiceStackName}-changeset-test'
+                RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/AdskCfnAdministratorAccessExecutionRole'  # ADSK managed role to deploy cloudformation
+                StackName: !Sub '${ServiceStackName}-test'
+              OutputArtifacts:
+                - Name: !Sub '${ServiceStackName}ChangeSetTest'
+              RunOrder: 2
+        - Name: prd-app-deploy
+          Actions:
+            - Name: CreateChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                Capabilities: CAPABILITY_IAM
+                ChangeSetName: !Sub '${ServiceStackName}-changeset-prd'
+                RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/AdskCfnAdministratorAccessExecutionRole'  # ADSK managed role to deploy cloudformation
+                StackName: !Sub '${ServiceStackName}-prd'
+                TemplateConfiguration: AppBuildOutput::prd-app-parameters.json.tmp
+                TemplatePath: AppBuildOutput::app-sam-output.yaml.tmp
+              InputArtifacts:
+                - Name: AppBuildOutput
+              RunOrder: 1
+            - Name: DeploymentApproval
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: '1'
+              Configuration:
+                CustomData: !Sub 'A new change set was created for the ${ServiceStackName}-prd stack. Before approving it, you can review the changes by clicking on "Details" in the preceeding step.'
+              RunOrder: 2
+            - Name: ExecuteChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                ChangeSetName: !Sub '${ServiceStackName}-changeset-prd'
+                RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/AdskCfnAdministratorAccessExecutionRole'  # ADSK managed role to deploy cloudformation
+                StackName: !Sub '${ServiceStackName}-prd'
+              OutputArtifacts:
+                - Name: !Sub '${ServiceStackName}ChangeSetPrd'
+              RunOrder: 3
+
+  LayerCfnResponse:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: cfnresponse
+      Description: Python to handle a cfn response for cfn custom resources
+      ContentUri: ../layers/cfnresponse
+      CompatibleRuntimes:
+        - python3.6
+        - python3.7
+      RetentionPolicy: Delete
+
+  # TODO: Move this to the serverless application repository
+  UsageDataCustom:
+    Type: Custom::UsageDataCustom
+    Condition: SendUsageData
+    Properties:
+      ServiceToken: !GetAtt UsageDataFunction.Arn
+      AwsAccountId: !Ref AWS::AccountId
+      APIEndpoint: !FindInMap ['UsageData', 'Data', 'APIEndpoint']
+      SolutionId: !FindInMap ['UsageData', 'Data', 'SolutionId']
+      StackId: !Ref AWS::StackId
+      Version: !FindInMap ['UsageData', 'Data', 'Version']
+
+  UsageDataFunction:
+    Type: AWS::Serverless::Function
+    Condition: SendUsageData
+    Properties:
+      Description: >
+        This function calls the usage data api
+      Handler: send-usage-data.lambda_handler
+      Runtime: python3.7
+      CodeUri: ../functions/send-usage-data
+      Timeout: 300
+      Policies:
+        - AWSLambdaBasicExecutionRole # Managed Policy
+      Layers:
+        - !Ref LayerCfnResponse
+
+
+Outputs:
+  CodePipeline:
+    Description: 'CodePipeline URL'
+    Value: !Sub 'https://console.aws.amazon.com/codesuite/codepipeline/pipelines/${Pipeline}/view'
+
+  AppCodeBuildProject:
+    Description: 'App CodeBuild project URL'
+    Value: !Sub 'https://console.aws.amazon.com/codesuite/codebuild/projects/${AppCodeBuildProject}/history'
+
+  PipelineCodeBuildProject:
+    Description: 'Pipeline CodeBuild project URL'
+    Value: !Sub 'https://console.aws.amazon.com/codesuite/codebuild/projects/${PipelineCodeBuildProject}/history'

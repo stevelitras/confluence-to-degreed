@@ -1,0 +1,432 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Performs Wiki whitelisting
+
+Parameters:
+  VpcID:
+    Description: VPC to Run this from
+    Type: String
+
+  Subnets:
+    Description: Subnet IDs to run from
+    Type: List<String>
+
+  SSMPathRoot:
+    Description: Top Level SSM Path for credentials
+    Type: String
+
+  TopicARN:
+    Description: SNS Topic arn
+    Type: String
+
+Resources:
+
+  dummySecGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Dummy Security Group"
+      VpcId: !Ref VpcID
+
+  wiki2DegreedExecution:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonAthenaFullAccess
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: "wiki2DegreedSNSAccess"
+          PolicyDocument:
+            Statement:
+            -
+              Action: "sns:*"
+              Effect: "Allow"
+              Resource: !Ref errorTopic
+        -
+          PolicyName: "wiki2DegreedDescribeParameters"
+          PolicyDocument:
+            Statement:
+            -
+              Effect: Allow
+              Action: "ssm:DescribeParameters"
+              Resource: "*"
+        -
+          PolicyName: "wiki2DegreedGetParametersA"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            -
+              Effect: Allow
+              Action: "ssm:GetParametersByPath"
+              Resource: !Sub "arn:aws:ssm:us-east-1:964355697993:parameter${SSMPathRoot}"
+        -
+          PolicyName: "wiki2DegreedGetParametersB"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            -
+              Effect: Allow
+              Action: "ssm:GetParameter"
+              Resource: !Sub "arn:aws:ssm:us-east-1:964355697993:parameter${SSMPathRoot}/*/*"
+
+  wikiKey:
+    Type: "AWS::KMS::Key"
+    Properties:
+      Description: "The Key used in Management of the wiki2Degreed Tool"
+      Enabled: true
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "key-default-1"
+        Statement:
+          -
+            Sid: "Allow administration of the key"
+            Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:aws:sts::${AWS::AccountId}:root"
+            Action:
+              - "kms:Create*"
+              - "kms:Describe*"
+              - "kms:Enable*"
+              - "kms:List*"
+              - "kms:Put*"
+              - "kms:Update*"
+              - "kms:Revoke*"
+              - "kms:Disable*"
+              - "kms:Get*"
+              - "kms:Delete*"
+              - "kms:ScheduleKeyDeletion"
+              - "kms:CancelKeyDeletion"
+              - "kms:Encrypt"
+            Resource: "*"
+          -
+            Sid: "Allow use of the key"
+            Effect: "Allow"
+            Principal:
+              AWS: !GetAtt wiki2DegreedExecution.Arn
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+            Resource: "*"
+
+  wiki2DegreedKeyAlias:
+    Type: "AWS::KMS::Alias"
+    Properties:
+      AliasName: "alias/wiki-degreed-integration-key"
+      TargetKeyId: !Ref wikiKey
+
+  wiki2Degreed:
+    Type: 'AWS::Serverless::Function'
+    Description: Performs Wiki whitelisting
+    Properties:
+      Handler: integrate.lambda_handler
+      Runtime: python3.7
+      CodeUri: ../functions/
+      Description: 'Function to execute integration actions'
+      MemorySize: 1024
+      Timeout: 900
+      Role: !GetAtt wiki2DegreedExecution.Arn
+      Events:
+        Schedule1:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 13 * * ? *)
+      VpcConfig:
+        SubnetIds: !Ref Subnets
+        SecurityGroupIds:
+          - !Ref dummySecGroup
+      Environment:
+        Variables:
+          SSMPATHROOT: !Ref SSMPathRoot
+          SSMKEY: !GetAtt wikiKey.Arn
+          ERROR_TOPIC: !Ref errorTopic
+
+
+  allPages:
+    Type: 'AWS::Serverless::Function'
+    Description: Creates the Batch List of Page batches to retrieve from the wiki site.
+    Properties:
+      Handler: all_pages.lambda_handler
+      Runtime: python3.7
+      CodeUri: ../functions/
+      Description: 'Function to execute integration actions'
+      MemorySize: 1024
+      Timeout: 900
+      Role: !GetAtt wiki2DegreedExecution.Arn
+      VpcConfig:
+        SubnetIds: !Ref Subnets
+        SecurityGroupIds:
+          - !Ref dummySecGroup
+      Environment:
+        Variables:
+          SSMPATHROOT: !Ref SSMPathRoot
+          SSMKEY: !GetAtt wikiKey.Arn
+          ERROR_TOPIC: !Ref errorTopic
+          RESULTS_BUCKET: !Ref resultsBucket
+
+  listSpaces:
+    Type: 'AWS::Serverless::Function'
+    Description: Gets the Wiki "Space" whitelist from dynamodb for passing on to map state.
+    Properties:
+      Handler: list_spaces.lambda_handler
+      Runtime: python3.7
+      CodeUri: ../functions/
+      Description: 'Function to execute integration actions'
+      MemorySize: 1024
+      Timeout: 900
+      Role: !GetAtt wiki2DegreedExecution.Arn
+      VpcConfig:
+        SubnetIds: !Ref Subnets
+        SecurityGroupIds:
+          - !Ref dummySecGroup
+      Environment:
+        Variables:
+          SSMPATHROOT: !Ref SSMPathRoot
+          SSMKEY: !GetAtt wikiKey.Arn
+          ERROR_TOPIC: !Ref errorTopic
+          RESULTS_BUCKET: !Ref resultsBucket
+
+  retrieveSpace:
+    Type: 'AWS::Serverless::Function'
+    Description: Gets the content from the specified Wiki "Space" whitelist (via map state).
+    Properties:
+      Handler: space_handler.lambda_handler
+      Runtime: python3.7
+      CodeUri: ../functions/
+      Description: 'Function to execute integration actions'
+      MemorySize: 1024
+      Timeout: 900
+      Role: !GetAtt wiki2DegreedExecution.Arn
+      VpcConfig:
+        SubnetIds: !Ref Subnets
+        SecurityGroupIds:
+          - !Ref dummySecGroup
+      Environment:
+        Variables:
+          SSMPATHROOT: !Ref SSMPathRoot
+          SSMKEY: !GetAtt wikiKey.Arn
+          ERROR_TOPIC: !Ref errorTopic
+          RESULTS_BUCKET: !Ref resultsBucket
+
+  allPagesHandler:
+    Type: 'AWS::Serverless::Function'
+    Description: Creates the Batch List of Page batches to retrieve from the wiki site.
+    Properties:
+      Handler: all_pages_handler.lambda_handler
+      Runtime: python3.7
+      CodeUri: ../functions/
+      Description: 'Function to execute integration actions'
+      MemorySize: 1024
+      Timeout: 900
+      Role: !GetAtt wiki2DegreedExecution.Arn
+      VpcConfig:
+        SubnetIds: !Ref Subnets
+        SecurityGroupIds:
+          - !Ref dummySecGroup
+      Environment:
+        Variables:
+          SSMPATHROOT: !Ref SSMPathRoot
+          SSMKEY: !GetAtt wikiKey.Arn
+          ERROR_TOPIC: !Ref errorTopic
+          RESULTS_BUCKET: !Ref resultsBucket
+
+
+  degreedHandler:
+    Type: 'AWS::Serverless::Function'
+    Description: Retrieve wiki content metadata from the degreed site.
+    Properties:
+      Handler: degreed_handler.lambda_handler
+      Runtime: python3.7
+      CodeUri: ../functions/
+      Description: 'Function to execute integration actions'
+      MemorySize: 1024
+      Timeout: 900
+      Role: !GetAtt wiki2DegreedExecution.Arn
+      VpcConfig:
+        SubnetIds: !Ref Subnets
+        SecurityGroupIds:
+          - !Ref dummySecGroup
+      Environment:
+        Variables:
+          SSMPATHROOT: !Ref SSMPathRoot
+          SSMKEY: !GetAtt wikiKey.Arn
+          ERROR_TOPIC: !Ref errorTopic
+          RESULTS_BUCKET: !Ref resultsBucket
+
+
+  CloudWatchErrorAlarmwiki2Degreed:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'TopicARN'
+      AlarmDescription: wiki2Degreed Error Check
+      AlarmName: wiki2Degreed-Errors
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Ref wiki2Degreed
+
+  CloudWatchInvokeAlarmwiki2Degreed:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'TopicARN'
+      AlarmDescription: wiki2Degreed Invoke Check
+      AlarmName: wiki2Degreed-Invokes
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Invocations
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Ref wiki2Degreed
+
+  errorTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      TopicName: "Wiki2DegreedErrors"
+
+  resultsBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireQuickly
+            ExpirationInDays: 1
+            Status: Enabled
+
+  StatesExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"
+
+  confluenceToDegreedStateMachine:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString:
+        Fn::Sub: |
+          {
+            "Comment": "Step Function for Confluence to Degreed Integration",
+            "StartAt": "RunAll",
+            "States": {
+              "RunAll": {
+                 "Type": "Parallel",
+                 "End": true,
+                 "Branches": [
+                   {
+                     "StartAt": "AllPages",
+                     "States": {
+                       "AllPages": {
+                         "Type": "Task",
+                         "Resource": "${allPages.Arn}",
+                         "Next": "AllPagesRetrieve"
+                       },
+
+                       "AllPagesRetrieve": {
+                         "Type": "Map",
+                         "InputPath": "$",
+                         "MaxConcurrency": 3,
+                         "Iterator": {
+                           "StartAt": "AllPagesHandler",
+                           "States": {
+                             "AllPagesHandler": {
+                               "Type": "Task",
+                               "Resource": "${allPagesHandler.Arn}",
+                               "End": true
+                             }
+                           }
+                         },
+                         "End": true
+                       }
+                     }
+                   },
+                   {
+                     "StartAt": "ListSpaces",
+                     "States": {
+                       "ListSpaces": {
+                         "Type": "Task",
+                         "Resource": "${listSpaces.Arn}",
+                         "Next": "SpaceHandler"
+                       },
+
+                       "SpaceHandler": {
+                         "Type": "Map",
+                         "InputPath": "$",
+                         "MaxConcurrency": 3,
+                         "Iterator": {
+                           "StartAt": "RetrieveSpace",
+                           "States": {
+                             "RetrieveSpace": {
+                               "Type": "Task",
+                               "Resource": "${retrieveSpace.Arn}",
+                               "End": true
+                             }
+                           }
+                         },
+                         "End": true
+                       }
+                     }
+                   },
+                   {
+                     "StartAt": "DegreedStep",
+                     "States": {
+                       "DegreedStep": {
+                         "Type": "Task",
+                         "Resource": "${degreedHandler.Arn}",
+                         "End": true
+
+                       }
+                     }
+                   }
+                 ]
+              }
+            }
+          }
+
+
+
+
+Outputs:
+  wiki2DegreedKeyArn:
+    Value: !GetAtt wikiKey.Arn

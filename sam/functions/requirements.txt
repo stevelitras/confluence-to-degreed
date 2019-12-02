@@ -1,0 +1,4 @@
+backoff
+requests
+jinja2
+slackclient<2.0

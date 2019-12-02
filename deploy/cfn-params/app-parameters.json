@@ -1,0 +1,14 @@
+{
+  "Parameters" : {
+    "DomainName": "TO_BE_REPLACED_DURING_BUILD",
+    "Environment": "TO_BE_REPLACED_DURING_BUILD",
+    "LambdaAlias": "TO_BE_REPLACED_DURING_BUILD",
+    "StageName": "TO_BE_REPLACED_DURING_BUILD",
+    "SwaggerFile": "TO_BE_REPLACED_DURING_BUILD"
+  },
+  "Tags" : {
+    "adsk:moniker": "TO_BE_REPLACED_DURING_BUILD",
+    "adsk:service": "TO_BE_REPLACED_DURING_BUILD",
+    "adsk:environment": "TO_BE_REPLACED_DURING_BUILD"
+  }
+}

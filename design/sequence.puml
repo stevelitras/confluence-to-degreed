@@ -1,0 +1,16 @@
+@startuml
+autonumber 10 10 "<b>[000]"
+
+"CloudWatch Event" as cwe -> "Lambda Function" as lwf: Periodic (expecting daily, but periodicity is adjustable) event kicks off content load function
+lwf -> "Dynamo DB Table" as ddb: reads list of wiki "space keys" to include
+loop "for every space key"
+  lwf -> "Confluence API" as confapi: pull all pages (link and metadata) from space
+end
+
+lwf -> "Degreed API" as degreeapi: Read all wiki pages in catalog
+loop "iterate through list of content"
+lwf -> lwf: determine disposition of page (delete for removed, update/create for others)
+end
+lwf -> lwf: create content upload file
+lwf -> degreeapi: send upload file to degreed.
+@enduml

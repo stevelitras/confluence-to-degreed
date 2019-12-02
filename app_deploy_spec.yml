@@ -1,0 +1,20 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - aws --version
+      - pip install --upgrade pip
+      - pip install --upgrade awscli
+  pre_build:
+    commands:
+      - pip install -r ./sam/functions/requirements.txt -t ./sam/functions
+  build:
+    commands:
+      - echo Build completed on `date`
+      # Deploy it...
+      - aws cloudformation package --template-file "./sam/cfn/${FINAL_STACK_NAME}.yaml" --s3-bucket "${DEPLOY_BUCKET}" --s3-prefix "${STACK_NAME}" --output-template-file "${FINAL_STACK_NAME}.tmp.cfn"
+      -  echo "aws cloudformation deploy --template-file ${FINAL_STACK_NAME}.tmp.cfn --stack-name ${FINAL_STACK_NAME} --parameter-overrides VpcID=${VPCID} InetSubnets=${INETSUBNETS} Subnets=${SUBNETS} TopicARN=${TOPICARN} SSMPathRoot=${SSMPATHROOT} --capabilities CAPABILITY_IAM --role-arn arn:aws:iam::964355697993:role/AdskCfnAdministratorAccessExecutionRole"
+      - aws cloudformation deploy --template-file "${FINAL_STACK_NAME}.tmp.cfn" --stack-name "${FINAL_STACK_NAME}" --role-arn arn:aws:iam::964355697993:role/AdskCfnAdministratorAccessExecutionRole --parameter-overrides VpcID=${VPCID} InetSubnets=${INETSUBNETS} Subnets=${SUBNETS} TopicARN=${TOPICARN} SSMPathRoot=${SSMPATHROOT} --capabilities CAPABILITY_IAM
+      # Get the info from the stack...
+      - aws cloudformation describe-stacks --stack-name=${FINAL_STACK_NAME} --query "Stacks[0].Outputs" --output text

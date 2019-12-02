@@ -1,0 +1,112 @@
+@startuml
+skinparam noteBackgroundColor cadetblue
+skinparam noteBorderColor black
+skinparam noteBorderThickness 0
+skinparam ActivityBackgroundColor slategrey
+skinparam ActivityBorderColor black
+skinparam ActivityBorderThickness 0
+skinparam ActivityBarColor #de9c0d
+skinparam ActivityFontColor white
+
+
+(*) --> "Cloudwatch Timed Event"
+--> "Confluence to Degreed Step Function"
+--> ===P1===
+note top #de9c0d
+<color:#5a0dde>Parallel Execution Step</color>
+end note
+--> "ListSpaces"
+note left
+Retrieves the Whitelist for Spaces
+and "passes" them back to the step
+function for handoff to the handlers
+end note
+
+--> ===P2===
+note top #de9c0d
+<color:#5a0dde>Map Step - Default</color>
+<color:#5a0dde>__concurrency=3__</color> 
+end note
+--> [Space #1] "SpaceHandler_1"
+note bottom
+Each space handler retrieves content for 
+that space, and feeds it into a specified CSV file
+that then gets added to an athena DB, creating the
+**"wiki_spaces"** table. It includes 3 links for each
+page: 
+# main url
+# pageID= url, and
+# tinyurl
+end note
+--> ===P3===
+===P2===--> [Space #2] "SpaceHandler_2"
+===P2===--> [Space #{...}] "SpaceHandler_n"
+
+"SpaceHandler_2"--> ===P3===
+"SpaceHandler_n"--> ===P3===
+
+
+===P1=== --> "AllPages"
+note right
+Looks up the number of pages in
+the overall wiki store, and divides
+it into jobs based on pagination
+params, then passes those jobs to
+the handlers to retrieve. 
+end note
+
+--> ===P4===
+note top #de9c0d
+<color:#5a0dde>Map Step - Default</color>
+<color:#5a0dde>__concurrency=3__</color> 
+end note
+--> [Grabs 1st batch] "AllPageHandler_1"
+===P4=== --> [Grabs 2nd batch] "AllPageHandler_2"
+===P4=== --> [Grabs nth batch] "AllPageHandler_n"
+note bottom
+Each AllPageHandler retrieves a batch of urls 
+and feeds it into a specified CSV file 
+(allpages/<batch#>.csv) that then
+gets added to the athena DB as the
+**"page_inventory"** table
+end note
+
+AllPageHandler_1 --> ===P3===
+AllPageHandler_2 --> ===P3===
+AllPageHandler_n --> ===P3===
+
+===P1=== --> "DegreedHandler"
+note right
+Pulls all content in internal catalog, filtered
+by uiurl (in conf) and puts it into a specified 
+csv file (degreed/articles.csv), adding to the 
+AthenaDB as the **"degreed_articles"** table. This may
+need to be split like the wiki calls in the future, 
+but for now, it seems to do fine in the 15 minute
+lambda timeout.
+end note
+
+DegreedHandler-->===P3===
+
+---> "ProcessResults"
+note bottom
+Processes the results with the following ruleset:
+# Check all urls in the degreed catalog against the page_inventory 
+   table - if a page is defined in the degreed catalog, but doesn't 
+   appear in the page_inventory table, mark it for deletion
+# Check all urls in the degreed catalog against the wiki_spaces
+   table. If it's in both places, override the contentID in the 
+   wiki_spaces record with the one from the degreed catalog, and 
+   update the record with the metadata from the wiki_spaces table.
+   This "updates" a record that might have been imported via the
+   ui or another mechanism, maintaining integrity across pathways.
+# Anything thats in the wiki_spaces table that hasn't already been
+   covered gets added as an add/update
+
+Then, it will generate the content import file, and post it to the 
+SFTP site.
+
+Finally, it will go back and delete all of the generated CSV files,
+prepping for the next run. 
+end note
+@enduml
