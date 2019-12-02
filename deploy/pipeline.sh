@@ -35,8 +35,6 @@ echo "ENVIRONMENT: $ENVIRONMENT"
 SERVICE_NAME='confluence-to-degreed'
 FINAL_STACK_NAME='confluence-to-degreed'
 SSMPATHROOT=/adsk/confluence-to-degreed
-#SLACK_CHANNEL=learning-service-evts
-#SLACK_TOKEN="xoxp-2778138625-14679071398-523358029171-6c1e211952275354dd25cca56f0d48b6"
 TEMPLATE_FILE=confluence-to-degreed.yaml
 TOPICARN=arn:aws:sns:us-east-1:964355697993:Entarch_Lambda_Notification_Channel
 AWS_ACCOUNT=$(aws sts get-caller-identity --query "Account" --output text)
