@@ -1,0 +1,23 @@
+@startmindmap
+* confluence-to-degreed
+** slack 
+***_ <&lock-locked>slack_token
+***_ <&lock-unlocked>slack_channel
+** wiki
+***_ <&lock-unlocked>url
+***_ <&lock-locked>passwd
+***_ <&lock-unlocked>username
+***_ <&lock-unlocked>uiurl
+***_ <&lock-unlocked>item_limit
+***_ <&ellipses>spaces
+** degreed
+***_ <&lock-unlocked>client_id
+***_ <&lock-locked>client_secret
+***_ <&lock-unlocked>oauthurl
+***_ <&lock-unlocked>url
+***_ <&lock-unlocked>article_limit
+** dynamo_table
+***_ <&lock-unlocked>arn
+***_ <&lock-unlocked>name
+
+@endmindmap
