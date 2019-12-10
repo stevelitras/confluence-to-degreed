@@ -17,11 +17,19 @@ Parameters:
   SSMPathRoot:
     Type: String
 
-  Git2S3StackName:
+  GitHubUser:
     Type: String
-    Description: 'The name of the git2s3 stack that this stack depends on (used to import resources)'
+    Description: 'The github Username'
 
-  GitBranch:
+  GitHubRepo:
+    Type: String
+    Description: 'The name of the github repo'
+
+  GitHubToken:
+    Type: String
+    Description: 'The token for github access'
+
+  GitHubBranch:
     Type: String
     Description: 'The git repo branch that will kick off the pipeline when commited to'
     Default: 'master'
@@ -62,24 +70,6 @@ Parameters:
     Type: String
     Description: Build Stack Name
 
-
-Conditions:
-
-  SendUsageData: !Equals [ !FindInMap ['UsageData', 'Data', 'SendUsageData'], true ]
-
-
-Mappings:
-
-  # The usage data collected is for the DES Tools Team to provide us with some
-  # statistics on who is using our solutions. The data we are collecting is:
-  # AWS account Id, stack ARN, SolutionId and the Version.
-  # For more info: https://git.autodesk.com/AWS-Deployment-Tools/cfn-usage-data
-  UsageData:
-    Data:
-      APIEndpoint: 'https://cfn-usage-data-api.engineering-services.autodesk.com'
-      SolutionId: 2  # internal solutionId used to distinguish between solutions
-      Version: 1  # the version of the solution
-      SendUsageData: true  # set to 'false' if you do not want to send usage data
 
 
 Resources:
@@ -299,26 +289,19 @@ Resources:
       RoleArn: !GetAtt 'PipelineExecutionRole.Arn'
       Stages:
         - Name: Source
-          Actions:
-            - Name: DownloadCodeZip
-              ActionTypeId:
-                Category: Source
-                Owner: AWS
-                Provider: S3
-                Version: '1'
-              Configuration:
-                S3Bucket:
-                  Fn::ImportValue:
-                    !Sub ${Git2S3StackName}-OutputBucketName
-                S3ObjectKey:
-                  Fn::Sub:
-                    - '${RepoName}/branch/${GitBranch}/bundle.zip'
-                    - RepoName:
-                        Fn::ImportValue:
-                          !Sub '${Git2S3StackName}-GitRepoName'
-              OutputArtifacts:
-                - Name: SourceZip
-              RunOrder: 1
+          ActionTypeId:
+            Category: Source
+            Owner: ThirdParty
+            Provider: GitHub
+            Version: 1
+          Configuration:
+            Owner: !Ref GitHubUser
+            Repo: !Ref GitHubRepo
+            Branch: !Ref GitHubBranch
+            OAuthToken: !Ref GitHubToken
+          OutputArtifacts:
+            - Name: SourceZip
+          RunOrder: 1
         # Update the pipeline stack here if changes affecting pipeline resources were commited. Doing it here doesn't require manual management of the pipeline stack.
         - Name: pipeline-update
           Actions:
