@@ -373,6 +373,12 @@ Resources:
                              "AllPagesHandler": {
                                "Type": "Task",
                                "Resource": "${allPagesHandler.Arn}",
+                               "Retry": [ {
+                                   "ErrorEquals": ["HandledError"],
+                                   "IntervalSeconds": 1,
+                                   "MaxAttempts": 2,
+                                   "BackoffRate": 2.0
+                               } ],
                                "End": true
                              }
                            }
