@@ -285,19 +285,22 @@ Resources:
       RoleArn: !GetAtt 'PipelineExecutionRole.Arn'
       Stages:
         - Name: Source
-          ActionTypeId:
-            Category: Source
-            Owner: ThirdParty
-            Provider: GitHub
-            Version: 1
-          Configuration:
-            Owner: !Ref GitHubUser
-            Repo: !Ref GitHubRepo
-            Branch: !Ref GitHubBranch
-            OAuthToken: !Ref GitHubToken
-          OutputArtifacts:
-            - Name: SourceZip
-          RunOrder: 1
+          Actions:
+          -
+            Name: Source
+            ActionTypeId:
+              Category: Source
+              Owner: ThirdParty
+              Provider: GitHub
+              Version: 1
+            Configuration:
+              Owner: !Ref GitHubUser
+              Repo: !Ref GitHubRepo
+              Branch: !Ref GitHubBranch
+              OAuthToken: !Ref GitHubToken
+            OutputArtifacts:
+              - Name: SourceZip
+            RunOrder: 1
         # Update the pipeline stack here if changes affecting pipeline resources were commited. Doing it here doesn't require manual management of the pipeline stack.
         - Name: pipeline-update
           Actions:
