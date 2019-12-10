@@ -230,7 +230,7 @@ Resources:
       Runtime: python3.7
       CodeUri: ../functions/
       Description: 'Function to execute integration actions'
-      MemorySize: 1024
+      MemorySize: 512
       Timeout: 900
       Role: !GetAtt wiki2DegreedExecution.Arn
       VpcConfig:
