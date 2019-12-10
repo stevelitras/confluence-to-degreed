@@ -104,10 +104,8 @@ Resources:
               - Effect: Allow
                 Resource:
                   Fn::Sub:
-                    - 'arn:aws:s3:::${BucketName}/*'
-                    - BucketName:
-                        Fn::ImportValue:
-                          !Sub '${Git2S3StackName}-OutputBucketName'
+                    - 'arn:aws:s3:::${CfnDeployBucket}/*'
+                    - BucketName: !Ref CfnDeployBucket
                 Action:
                   - 's3:GetObject'
                   - 's3:GetObjectVersion'
@@ -281,9 +279,7 @@ Resources:
     Type: AWS::CodePipeline::Pipeline
     Properties:
       ArtifactStore:
-        Location:
-          Fn::ImportValue:
-            !Sub ${Git2S3StackName}-OutputBucketName
+        Location: !Ref CfnDeployBucket
         Type: S3
       Name: !Sub '${AWS::StackName}-pipeline'
       RoleArn: !GetAtt 'PipelineExecutionRole.Arn'
