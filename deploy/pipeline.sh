@@ -3,10 +3,13 @@
 # Example usage: deploy/pipeline.sh -n your-stack-name -e dev
 # To delete a stack: aws cloudformation delete-stack --stack-name your-stack-name
 
-while getopts :n:e: option; do
+while getopts :t:n:e: option; do
   case "${option}" in
     n)
       STACK_NAME=${OPTARG}
+    ;;
+    t)
+      GIT_TOKEN=${OPTARG}
     ;;
     e)
       ENVIRONMENT=${OPTARG}
@@ -20,6 +23,11 @@ done
 
 if [ "$STACK_NAME" == "" ]; then
   echo "Stack name not set. Please pass one via the -n parameter."
+  exit 1
+fi
+
+if [ "$GIT_TOKEN" == ""]; then
+  echo "GitHub Token not provided"
   exit 1
 fi
 
@@ -95,17 +103,10 @@ TAG_ADSK_SERVICE="adsk:service=${SERVICE_NAME}-${ENVIRONMENT}-${AWS_REGION}"
 TAG_ADSK_ENVIRONMENT="adsk:environment=${ENVIRONMENT}"
 
 # Set some cfn stack parameter overrides here
-
-# the domain used for the example api (leave empty if you do not want a custom domain)
-DOMAIN_NAME=''
-echo "DomainName: $DOMAIN_NAME"
-
-# the name of the git2s3 stack
-GIT_2_S3_STACK_NAME='git-pull-conf2degreed'
-echo "Git2S3StackName: $GIT_2_S3_STACK_NAME"
-
-# the branch of the GitRepoName defined in GIT_2_S3_STACK_NAME that will trigger the pipeline when pushed to
 GIT_BRANCH='master'
+GIT_USER='stevelitras'
+GIT_REPO='stevelitras/confluence-to-degreed'
+
 echo "GitBranch: $GIT_BRANCH"
 
 # the prefix for the asdk:moniker and adsk:service tags used by the exampole api
@@ -154,7 +155,10 @@ AwsAccountId="${AWS_ACCOUNT}" \
 CfnDeployBucket="${DEPLOY_BUCKET}" \
 FinalStackName="${FINAL_STACK_NAME}" \
 Git2S3StackName="${GIT_2_S3_STACK_NAME}" \
-GitBranch="${GIT_BRANCH}" \
+GitHubBranch="${GIT_BRANCH}" \
+GitHubToken="${GIT_TOKEN}" \
+GitHubUser="${GIT_USER}" \
+GitHubRepo="${GIT_REPO}" \
 InetSubnets="${INETSUBNETS}" \
 VpcId="${VPC_ID}" \
 MonikerPrefix="${MONIKER_PREFIX}" \
