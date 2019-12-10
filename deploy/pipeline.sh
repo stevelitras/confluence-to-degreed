@@ -105,7 +105,7 @@ TAG_ADSK_ENVIRONMENT="adsk:environment=${ENVIRONMENT}"
 # Set some cfn stack parameter overrides here
 GIT_BRANCH='master'
 GIT_USER='stevelitras'
-GIT_REPO='stevelitras/confluence-to-degreed'
+GIT_REPO='confluence-to-degreed'
 
 echo "GitBranch: $GIT_BRANCH"
 
