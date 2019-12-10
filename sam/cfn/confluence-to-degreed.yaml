@@ -374,7 +374,7 @@ Resources:
                                "Type": "Task",
                                "Resource": "${allPagesHandler.Arn}",
                                "Retry": [ {
-                                   "ErrorEquals": ["HandledError"],
+                                   "ErrorEquals": ["Lambda.Unknown"],
                                    "IntervalSeconds": 1,
                                    "MaxAttempts": 2,
                                    "BackoffRate": 2.0
