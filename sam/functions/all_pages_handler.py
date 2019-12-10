@@ -27,14 +27,16 @@ def getAllWikiPages(config, params):
 
   murl = config['wiki']['url'] + '/rest/api/content?type=page&start=' + str(params['start']) + "&limit=" + str(params['limit'])
   o = get_url(murl, auth=HTTPBasicAuth(config['wiki']['username'], config['wiki']['passwd']))
-  logging.info("Raw: " + o.text)
+  logging.debug("Raw: " + o.text)
   res = o.json()
   results = res['results']
   with open(targ_file.name, mode='w') as csv_file:
     csv_writer = csv.writer(csv_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
 
     for result in results:
-      logging.debug("Overall URL Result: " + result['_links']['webui'])
+      logging.debug("Overall URL Result: " + config['wiki']['uiurl'] + result['_links']['webui'])
+      logging.debug("Overall URL Result: " + config['wiki']['uiurl'] + result['_links']['tinyui'])
+      logging.debug("Overall URL Result: " + config['wiki']['uiurl'] + "/pages/viewpage.action?pageId=" + result['id'])
       csv_writer.writerow([config['wiki']['uiurl'] + result['_links']['webui']])
       csv_writer.writerow([config['wiki']['uiurl'] + result['_links']['tinyui']])
       csv_writer.writerow([config['wiki']['uiurl'] + "/pages/viewpage.action?pageId=" + result['id']])
