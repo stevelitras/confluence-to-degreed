@@ -366,7 +366,7 @@ Resources:
                        "AllPagesRetrieve": {
                          "Type": "Map",
                          "InputPath": "$",
-                         "MaxConcurrency": 6,
+                         "MaxConcurrency": 15,
                          "Iterator": {
                            "StartAt": "AllPagesHandler",
                            "States": {
