@@ -26,10 +26,13 @@ def getAllWikiPages(config, params):
   s3 = boto3.client('s3')
 
   murl = config['wiki']['url'] + '/rest/api/content?type=page&start=' + str(params['start']) + "&limit=" + str(params['limit'])
+  logging.info("Retrieving Payload")
   o = get_url(murl, auth=HTTPBasicAuth(config['wiki']['username'], config['wiki']['passwd']))
   logging.debug("Raw: " + o.text)
+  logging.info("Retrieved Payload")
   res = o.json()
   results = res['results']
+  logging.info("WRiting CSV File")
   with open(targ_file.name, mode='w') as csv_file:
     csv_writer = csv.writer(csv_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
 
@@ -41,14 +44,20 @@ def getAllWikiPages(config, params):
       csv_writer.writerow([config['wiki']['uiurl'] + result['_links']['tinyui']])
       csv_writer.writerow([config['wiki']['uiurl'] + "/pages/viewpage.action?pageId=" + result['id']])
 
+  logging.info("CSV File written")
+
+  logging.info("Uploading to S3")
   response = s3.upload_file(targ_file.name, os.environ['RESULTS_BUCKET'], "allpages/" + str(params['start']) + ".csv")
   logging.debug("S3 Response: " + json.dumps(response))
+  logging.info("Past Upload")
 
   os.environ['ATHENA_DB'] = "confluencetodegreed"
 
+  logging.info("Creating DB if necessary")
   aquery = "CREATE DATABASE IF NOT EXISTS confluencetodegreed"
   results = athena_query(aquery)
   logging.debug("Results: " + json.dumps(results))
+  logging.info("DB Creation step done")
 
   aquery = """CREATE EXTERNAL TABLE IF NOT EXISTS `page_inventory` (
       `url` string
@@ -58,10 +67,10 @@ def getAllWikiPages(config, params):
   LOCATION 's3://"""
   aquery += os.environ['RESULTS_BUCKET'] + "/allpages/'"
 
-  logging.info("Athena Query: " + aquery)
+  logging.info("Execution Athena Query: " + aquery)
   rows = athena_query(aquery)
   logging.debug("Query Results: " + json.dumps(rows))
-
+  logging.info("Athena table create step complete")
 
 def lambda_handler(event, context):
   config = getParamInfo()
