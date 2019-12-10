@@ -66,7 +66,7 @@ def getAllWikiPages(config, params):
 def lambda_handler(event, context):
   config = getParamInfo()
   template_values(config,config,tokens)
-  logging.info("Config: " + json.dumps(config))
+  logging.debug("Config: " + json.dumps(config))
   logging.info("Event: " + json.dumps(event))
   getAllWikiPages(config, event)
   #logging.info("Page List Params: " + json.dumps(url_list))
