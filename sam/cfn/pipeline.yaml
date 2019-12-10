@@ -407,45 +407,6 @@ Resources:
                 - Name: !Sub '${ServiceStackName}ChangeSetPrd'
               RunOrder: 3
 
-  LayerCfnResponse:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: cfnresponse
-      Description: Python to handle a cfn response for cfn custom resources
-      ContentUri: ../layers/cfnresponse
-      CompatibleRuntimes:
-        - python3.6
-        - python3.7
-      RetentionPolicy: Delete
-
-  # TODO: Move this to the serverless application repository
-  UsageDataCustom:
-    Type: Custom::UsageDataCustom
-    Condition: SendUsageData
-    Properties:
-      ServiceToken: !GetAtt UsageDataFunction.Arn
-      AwsAccountId: !Ref AWS::AccountId
-      APIEndpoint: !FindInMap ['UsageData', 'Data', 'APIEndpoint']
-      SolutionId: !FindInMap ['UsageData', 'Data', 'SolutionId']
-      StackId: !Ref AWS::StackId
-      Version: !FindInMap ['UsageData', 'Data', 'Version']
-
-  UsageDataFunction:
-    Type: AWS::Serverless::Function
-    Condition: SendUsageData
-    Properties:
-      Description: >
-        This function calls the usage data api
-      Handler: send-usage-data.lambda_handler
-      Runtime: python3.7
-      CodeUri: ../functions/send-usage-data
-      Timeout: 300
-      Policies:
-        - AWSLambdaBasicExecutionRole # Managed Policy
-      Layers:
-        - !Ref LayerCfnResponse
-
-
 Outputs:
   CodePipeline:
     Description: 'CodePipeline URL'
