@@ -28,8 +28,9 @@ def getAllWikiPages(config, params):
   murl = config['wiki']['url'] + '/rest/api/content?type=page&start=' + str(params['start']) + "&limit=" + str(params['limit'])
   logging.info("Retrieving Payload")
   o = get_url(murl, auth=HTTPBasicAuth(config['wiki']['username'], config['wiki']['passwd']))
+
   logging.debug("Raw: " + o.text)
-  logging.info("Retrieved Payload")
+  logging.info("Retrieved Payload: " + str(o.status_code))
   res = o.json()
   results = res['results']
   logging.info("WRiting CSV File")
@@ -79,9 +80,3 @@ def lambda_handler(event, context):
   logging.info("Event: " + json.dumps(event))
   getAllWikiPages(config, event)
   return("Success")
-  #logging.info("Page List Params: " + json.dumps(url_list))
-  #wiki_content = getWikiPages(config)
-  #degreed_content = getDegreedArticles(config)
-
-  #logging.info("Wiki Content: " + json.dumps(wiki_content))
-
