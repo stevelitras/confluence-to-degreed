@@ -376,7 +376,7 @@ Resources:
                                "Retry": [ {
                                    "ErrorEquals": ["Lambda.Unknown"],
                                    "IntervalSeconds": 300,
-                                   "MaxAttempts": 2,
+                                   "MaxAttempts": 10,
                                    "BackoffRate": 2.0
                                } ],
                                "End": true
