@@ -375,7 +375,7 @@ Resources:
                                "Resource": "${allPagesHandler.Arn}",
                                "Retry": [ {
                                    "ErrorEquals": ["Lambda.Unknown"],
-                                   "IntervalSeconds": 1,
+                                   "IntervalSeconds": 300,
                                    "MaxAttempts": 2,
                                    "BackoffRate": 2.0
                                } ],
