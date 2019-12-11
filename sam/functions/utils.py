@@ -54,11 +54,17 @@ def slack_notify(config, text):
 def fatal_code(e):
     return 400 <= e.response.status_code < 500
 
+def backoff_hdlr(details):
+  logging.info("Backing off {wait:0.1f} seconds afters {tries} tries "
+        "calling function {target} with args {args} and kwargs "
+        "{kwargs}".format(**details))
+
 # Decorate get requests with backoff, set up to do exponential backoff retries
 @backoff.on_exception(backoff.expo,
                       requests.exceptions.RequestException,
                       max_time=300,
-                      giveup=fatal_code)
+                      giveup=fatal_code,
+                      on_backoff=backoff_hdlr)
 def get_url(*args, **kwargs):
     return requests.get(*args, **kwargs)
 
@@ -66,7 +72,8 @@ def get_url(*args, **kwargs):
 @backoff.on_exception(backoff.expo,
                       requests.exceptions.RequestException,
                       max_time=300,
-                      giveup=fatal_code)
+                      giveup=fatal_code,
+                      on_backoff=backoff_hdlr)
 def post_url(*args, **kwargs):
     return requests.post(*args, **kwargs)
 
@@ -74,7 +81,8 @@ def post_url(*args, **kwargs):
 @backoff.on_exception(backoff.expo,
                       requests.exceptions.RequestException,
                       max_time=300,
-                      giveup=fatal_code)
+                      giveup=fatal_code,
+                      on_backoff=backoff_hdlr)
 def put_url(*args, **kwargs):
   return requests.put(*args, **kwargs)
 

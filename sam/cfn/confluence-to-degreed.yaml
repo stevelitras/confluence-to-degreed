@@ -370,6 +370,7 @@ Resources:
                          "Iterator": {
                            "StartAt": "AllPagesHandler",
                            "States": {
+
                              "AllPagesHandler": {
                                "Type": "Task",
                                "Resource": "${allPagesHandler.Arn}",
@@ -379,6 +380,11 @@ Resources:
                                    "MaxAttempts": 10,
                                    "BackoffRate": 2.0
                                } ],
+                               "Next": "WaitFiveMinutes"
+                             },
+                             "WaitFiveMinutes": {
+                               "Type": "Wait",
+                               "Seconds": 300,
                                "End": true
                              }
                            }
