@@ -55,7 +55,7 @@ def fatal_code(e):
   try:
     return 400 <= e.response.status_code < 500
   except Exception as e:
-    logging.info("Requests Exception" + json.dumps(e))
+    logging.info("Requests Exception" + str(e))
     return e
 
 def backoff_hdlr(details):
