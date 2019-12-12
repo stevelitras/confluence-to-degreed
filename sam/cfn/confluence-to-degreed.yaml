@@ -384,7 +384,7 @@ Resources:
                              },
                              "WaitFiveMinutes": {
                                "Type": "Wait",
-                               "Seconds": 300,
+                               "Seconds": 30,
                                "End": true
                              }
                            }
