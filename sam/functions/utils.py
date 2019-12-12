@@ -52,7 +52,11 @@ def slack_notify(config, text):
 
 # fatal_code handles backoff/requests exceptions
 def fatal_code(e):
+  try:
     return 400 <= e.response.status_code < 500
+  except Exception as e:
+    logging.info("Requests Exception" + json.dumps(e))
+    return e
 
 def backoff_hdlr(details):
   logging.info("Backing off {wait:0.1f} seconds afters {tries} tries "
