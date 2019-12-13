@@ -31,6 +31,8 @@ def getAllWikiPages(config, params):
     o = get_url(murl, auth=HTTPBasicAuth(config['wiki']['username'], config['wiki']['passwd']), timeout=300)
   except Exception as e:
     logging.info("get_url Exception: " + str(e))
+    return("Retrieval Failed")
+
 
 
   logging.debug("Raw: " + o.text)
@@ -76,11 +78,11 @@ def getAllWikiPages(config, params):
   rows = athena_query(aquery)
   logging.debug("Query Results: " + json.dumps(rows))
   logging.info("Athena table create step complete")
+  return ("Success")
 
 def lambda_handler(event, context):
   config = getParamInfo()
   template_values(config,config,tokens)
   logging.debug("Config: " + json.dumps(config))
   logging.info("Event: " + json.dumps(event))
-  getAllWikiPages(config, event)
-  return("Success")
+  return getAllWikiPages(config, event)
