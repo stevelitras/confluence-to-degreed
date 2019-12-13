@@ -27,7 +27,11 @@ def getAllWikiPages(config, params):
 
   murl = config['wiki']['url'] + '/rest/api/content?type=page&start=' + str(params['start']) + "&limit=" + str(params['limit'])
   logging.info("Retrieving Payload")
-  o = get_url(murl, auth=HTTPBasicAuth(config['wiki']['username'], config['wiki']['passwd']), timeout=300)
+  try:
+    o = get_url(murl, auth=HTTPBasicAuth(config['wiki']['username'], config['wiki']['passwd']), timeout=300)
+  except Exception as e:
+    logging.info("get_url Exception: " + str(e))
+
 
   logging.debug("Raw: " + o.text)
   logging.info("Retrieved Payload: " + str(o.status_code))
