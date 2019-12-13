@@ -35,7 +35,7 @@ def getAllWikiPages(config, params):
 
 
 
-  logging.debug("Raw: " + o.text)
+  logging.info("Raw: " + o.text)
   logging.info("Retrieved Payload: " + str(o.status_code))
   res = o.json()
   results = res['results']
