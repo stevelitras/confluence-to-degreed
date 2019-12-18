@@ -5,7 +5,7 @@
 This repo creates an AWS Step Function that integrates specified content (via a white list of space keys) from a confluence wiki site to a Degreed LXP instance. 
 # Process Sequence Diagram
 
-![Sequence Diagram](./images/sequence.svg?sanitize=true)
+![Sequence Diagram](https://raw.githubusercontent.com/stevelitras/confluence-to-degreed/images/sequence.svg?sanitize=true)
 
 # Process Activity Diagram
 
