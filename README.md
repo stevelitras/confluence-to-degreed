@@ -42,34 +42,19 @@ spaces | StringList | comma separated list of all of the "whitelisted" Space Key
 
 ### degreed container
 
-#### client_id
+Name | Type | Content | Caveats 
+---------- | ---------- | ---------- | ---------
+client_id | SecureString | the client_id for authentication against the degreed API - you'll need to get this from your degreed account team. | (encoded with the key created by the cloud formation template) 
+client_secret | SecureString | the client_secret for authentication against the degreed API - you'll need to get this from your degreed account team. | (encoded with the key created by the cloud formation template) 
+oauthurl | String |the url for the oauth token endpoint for the degreed API. | Since URL's can't be natively stored in params, replace the "http" protocol name with "urlhead", and "https" with "urlheads" - the code will substitute accordingly. Do NOT include any URI beyond the root (as the URI's are handled in the code). Example urlheads://wiki.somewhere.com/
+url | String | the url for the API endpoints - do not include any URI - just the protocol + host, like urlheads://api.degreed.com/ | Since URL's can't be natively stored in params, replace the "http" protocol name with "urlhead", and "https" with "urlheads" - the code will substitute accordingly. Do NOT include any URI beyond the root (as the URI's are handled in the code). Example urlheads://wiki.somewhere.com/
+article_limit | String | the number to use for the "limit" parameter for degreed API. | This should be the max available for the API, preferably, to minimize impact of paging on time. 
 
-A SecureString (encoded with the key created by the cloud formation template) containing the client_id for authentication against the degreed API - you'll need to get this from your degreed account team.
-
-#### client_secret
-
-A SecureString (encoded with the key created by the cloud formation template) containing the client_secret for authentication against the degreed API - you'll need to get this from your degreed account team.
-
-#### oauthurl
-
-A String containing the url (with http replaced with "urlhead") for the oauth token endpoint for the degreed API. 
-
-#### url
-
-A String containing the url (with http replaced with "urlhead") for the API endpoints - do not include any URI - just the protocol + host, like urlheads://api.degreed.com/
-
-#### article_limit
-
-A String containing the number to use for the "limit" parameter for degreed API. This should be the max available for the API, preferably, to minimize impact of paging on time. 
-
-### dynamo_table (optional)
+### dynamo_table (optional) container
 
 The dynamo_table container provides the user the option to store the spac e key whitelist in a dynamo db table (each record contains a single "space" attribute including the space key to be whitelisted). The default is to use the wiki/spaces parameter to contain the whitelist.
 
-#### arn
-
-A String containing the arn to the table.
-
-#### name
-
-A String containing the name of the table. 
+Name | Type | Content | Caveats 
+---------- | ---------- | ---------- | ---------
+arn | String | the arn to the table. |
+name | String | the name of the table. |
