@@ -25,11 +25,11 @@ Configuration is handled through the SSM parameter store. The Cloud Formation Te
 
 #### slack_token
 
-type
+Type
 : SecureString (encoded with the key created by the cloud formation template)
 
-description
-:with the token to provide to the slacke API.
+Description
+: with the token to provide to the slacke API.
 
 #### slack_channel
 
