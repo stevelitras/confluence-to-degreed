@@ -5,7 +5,7 @@
 This repo creates an AWS Step Function that integrates specified content (via a white list of space keys) from a confluence wiki site to a Degreed LXP instance. 
 # Process Sequence Diagram
 
-![Sequence Diagram](https://s7v9l3nxx5.execute-api.us-west-2.amazonaws.com/plantuml/png/JL5DZzCm5BpdLunyQgK5ohL2Ay4kI4WSLWY90-BmulUIcZYsvOyj-VVOQLegnOTunZFpvb79tfMvbuZtX_Qf3_tZhyFXy5jrdNgoll1Folg4pw_YiW8bwBFWpIFKDvfx9dmfJcVZtOhPyt34YqJZsMZiv6-G2heHJCOk3-XBHjXWanUO1E8_9MNghUmXpGIJqLE27mPextAxiPuOmsRKLPCrmFFYQFPu_eGVxVaQWBa_8WfnpM9IhYeucyb0fK1QCCcI5BA7STeMbivw7w067vjtN72ZgGwu6ZrvDzWYhY8VNxvUIgXN5CmHeLWBgYVGA0axQzm4SenPCZ5bscE8Vhu8T-Au-vzVnYZ2DqrU_rVLxtM2LNKDVv4s3hhgMJzkgKsMI5cGJz6NyNGRU6jDNOtMfR1KzcoSW4qAFfbMPMCtSUnOR2MW5H5bzg_23oYXvfTtkjQvGJwV9ARzEiQz-4Qvhgk4oyACbIljRhPKNzzJsZekCB_z1m00)
+![Sequence Diagram](./images/sequence.svg?sanitize=true)
 
 # Process Activity Diagram
 
