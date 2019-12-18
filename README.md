@@ -15,7 +15,7 @@ This repo creates an AWS Step Function that integrates specified content (via a 
 
 Configuration is handled through the SSM parameter store. The Cloud Formation Template takes a "SSMPathRoot" Parameter that is the top level of the parameter hierarchy - in the diagram below, it corresponds with the "confluence-to-degreed" node. 
 
-<insert mindmap here>
+![Configuration Options Mindmap](./images/params.svg?sanitize=true)
 
 ## Config Options
 
