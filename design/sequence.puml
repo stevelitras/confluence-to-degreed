@@ -26,7 +26,7 @@ loop "for each startnumber"
   allpages_handler_lwf -> athena: create "page_inventory" table
 end
 
-step -> "createContentUpload Lambda" as content_lwf: execute content upload workflow
+step -> "processResults Lambda" as content_lwf: execute content upload workflow
 content_lwf->athena: select degreed_articles that do **not** have a match in page_inventory, to create a list of "to be deleted" articles
 content_lwf->athena: select degreed_articles that do have a match in wiki_spaces, to create a list of "update" articles
 content_lwf->athena: select wiki_spaces pages that do not show up in degreed, to create a list of "new" articles
