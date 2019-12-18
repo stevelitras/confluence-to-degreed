@@ -3,6 +3,11 @@
 # Description
 
 This repo creates an AWS Step Function that integrates specified content (via a white list of space keys) from a confluence wiki site to a Degreed LXP instance. 
+
+# Basic Functionality
+
+The intent of this repo is to provide a mechanism to "integrate" content from a Confluence wiki site to a company's Degreed implementation. It is designed such that only whitelisted "spaces" (via confluence space key) are bulk loaded, but other pages added by the end users via either the degreed UI or the Degreed "Button" browser plugin are also "supported" and updated with metadata from the wiki system (labels, which become topics in the Degreed catalog)
+
 # Process Sequence Diagram
 
 The below sequence diagram shows the steps taken by the step function, but is a bit of a misnomer, as steps 20, 80 and 120 are actually all executed in parallel, via a Step Function Parallel state.
