@@ -25,9 +25,9 @@ Configuration is handled through the SSM parameter store. The Cloud Formation Te
 
 #### slack_token
 
-| Type | Content | Caveats |
-| ---------- | ---------- |
-| SecureString (encoded with the key created by the cloud formation template) | token to provide to the slack API. |
+Type | Content | Caveats 
+---------- | ----------
+SecureString | token to provide to the slack API. |  (encoded with the key created by the cloud formation template) 
 
 #### slack_channel
 
