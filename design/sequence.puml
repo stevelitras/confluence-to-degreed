@@ -1,16 +1,36 @@
 @startuml
 autonumber 10 10 "<b>[000]"
 
-"CloudWatch Event" as cwe -> "Lambda Function" as lwf: Periodic (expecting daily, but periodicity is adjustable) event kicks off content load function
-lwf -> "Dynamo DB Table" as ddb: reads list of wiki "space keys" to include
+"CloudWatch Event" as cwe -> "Confluence-to-Wiki Step Function" as step: Periodic (expecting daily, but periodicity is adjustable) event kicks off content load function
+step -> "listSpaces Lambda" as ls_lwf: execute "Spaces" Workflow
+ls_lwf -> step: "Return list of spaces from either config param or dynamoDB table"
 loop "for every space key"
-  lwf -> "Confluence API" as confapi: pull all pages (link and metadata) from space
+  step -> "spaceHandler Lambda" as sh_lwf: run spaceHandler for space key
+  sh_lwf -> "Confluence API" as confapi: pull all pages (link and metadata) from space
+  sh_lwf -> "S3 Bucket" as s3bucket: upload space results as CSV (spaces/<spacekey>.csv)
+  sh_lwf -> "Athena DB" as athena: create "wiki_spaces" table
 end
 
-lwf -> "Degreed API" as degreeapi: Read all wiki pages in catalog
-loop "iterate through list of content"
-lwf -> lwf: determine disposition of page (delete for removed, update/create for others)
+step -> "degreedHandler Lambda" as degreed_lwf: Execute Degreed Workflow
+degreed_lwf -> "Degreed API" as degreedapi: Read all wiki pages in degreed catalog
+degreed_lwf -> s3bucket: upload results as CSV (degreed/articles.csv)
+degreed_lwf -> athena: create "degreed_articles" table
+
+step -> "allPages Lambda" as allpages_lwf: Execute AllPages Workflow
+allpages_lwf -> confapi: Get total count of pages in the wiki
+allpages_lwf -> step: split the total count by "wiki/item_limit" and return a list of "start" numbers
+loop "for each startnumber"
+  step-> "allPagesHandler Lambda" as allpages_handler_lwf: run allPagesHandler 
+  allpages_handler_lwf->confapi: retrieve <wiki/item_limit> wiki pages (no expansion, really just need URL and ID), starting with #<start>
+  allpages_handler_lwf-> s3bucket: upload results as CSV (allpages/<startnumber>.csv)
+  allpages_handler_lwf -> athena: create "page_inventory" table
 end
-lwf -> lwf: create content upload file
-lwf -> degreeapi: send upload file to degreed.
+
+step -> "createContentUpload Lambda" as content_lwf: execute content upload workflow
+content_lwf->athena: select degreed_articles that do **not** have a match in page_inventory, to create a list of "to be deleted" articles
+content_lwf->athena: select degreed_articles that do have a match in wiki_spaces, to create a list of "update" articles
+content_lwf->athena: select wiki_spaces pages that do not show up in degreed, to create a list of "new" articles
+content_lwf->content_lwf: merge lists to create content upload file
+content_lwf->degreedapi: upload content upload file
+content_lwf->step: Success!
 @enduml
