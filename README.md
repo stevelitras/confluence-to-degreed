@@ -5,17 +5,17 @@
 This repo creates an AWS Step Function that integrates specified content (via a white list of space keys) from a confluence wiki site to a Degreed LXP instance. 
 # Process Sequence Diagram
 
-![Sequence Diagram](https://raw.githubusercontent.com/stevelitras/confluence-to-degreed/images/sequence.svg?sanitize=true)
+![Sequence Diagram](https://raw.githubusercontent.com/stevelitras/confluence-to-degreed/master/images/sequence.svg?sanitize=true)
 
 # Process Activity Diagram
 
-![Activity Diagram](./images/activity.svg?sanitize=true)
+![Activity Diagram](https://raw.githubusercontent.com/stevelitras/confluence-to-degreed/master/images/activity.svg?sanitize=true)
 
 # Configuration
 
 Configuration is handled through the SSM parameter store. The Cloud Formation Template takes a "SSMPathRoot" Parameter that is the top level of the parameter hierarchy - in the diagram below, it corresponds with the "confluence-to-degreed" node. 
 
-![Configuration Options Mindmap](./images/params.svg?sanitize=true)
+![Configuration Options Mindmap](https://raw.githubusercontent.com/stevelitras/confluence-to-degreed/master/images/params.svg?sanitize=true)
 
 ## Config Options
 
