@@ -38,7 +38,7 @@ passwd | SecureString | the password for the wiki API (using basic auth, combine
 username | String | the username to authenticate with against the API. |
 item_limit | String | the number of items to set as the limit parameter for API pagination. This should be set at or near the maximum number of pages the API can request without expansion (in my instance of Confluence, that's 500). Setting higher than the limit will create gaps in the "all_pages" inventory, which could lead to links being removed from Degreed. |
 max_labels | String | the maximum number of labels to push through to degreed as "skill tags". The code will take the first n (where n is the max_labels value). | Degreed recommends no more than 20 (but preferably 5 or less)
-spaces | StringList | comma separated list of all of the "whitelisted" Space Keys. |
+spaces | StringList | comma separated list of all of the "whitelisted" Space Keys. | preferred way to specify wiki spaces to "collect" - can also be a dynamo table (see dynamo_table container below)
 
 ### degreed container
 
