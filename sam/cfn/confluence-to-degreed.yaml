@@ -200,7 +200,7 @@ Resources:
           ERROR_TOPIC: !Ref errorTopic
           RESULTS_BUCKET: !Ref resultsBucket
 
-  retrieveSpace:
+  spaceHandler:
     Type: 'AWS::Serverless::Function'
     Description: Gets the content from the specified Wiki "Space" whitelist (via map state).
     Properties:
@@ -407,11 +407,11 @@ Resources:
                          "InputPath": "$",
                          "MaxConcurrency": 3,
                          "Iterator": {
-                           "StartAt": "RetrieveSpace",
+                           "StartAt": "spaceHandler",
                            "States": {
-                             "RetrieveSpace": {
+                             "spaceHandler": {
                                "Type": "Task",
-                               "Resource": "${retrieveSpace.Arn}",
+                               "Resource": "${spaceHandler.Arn}",
                                "End": true
                              }
                            }
