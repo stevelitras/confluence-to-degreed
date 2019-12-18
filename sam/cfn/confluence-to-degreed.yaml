@@ -366,7 +366,7 @@ Resources:
                        "AllPagesRetrieve": {
                          "Type": "Map",
                          "InputPath": "$",
-                         "MaxConcurrency": 1,
+                         "MaxConcurrency": 3,
                          "Iterator": {
                            "StartAt": "AllPagesHandler",
                            "States": {
@@ -377,12 +377,12 @@ Resources:
                                "Retry": [ {
                                    "ErrorEquals": ["Lambda.Unknown"],
                                    "IntervalSeconds": 300,
-                                   "MaxAttempts": 10,
+                                   "MaxAttempts": 3,
                                    "BackoffRate": 2.0
                                } ],
-                               "Next": "WaitFiveMinutes"
+                               "Next": "TempWait"
                              },
-                             "WaitFiveMinutes": {
+                             "TempWait": {
                                "Type": "Wait",
                                "Seconds": 30,
                                "End": true
