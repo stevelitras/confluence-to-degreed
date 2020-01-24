@@ -340,6 +340,7 @@ Outputs:
     Description: 'App CodeBuild project URL'
     Value: !Sub 'https://console.aws.amazon.com/codesuite/codebuild/projects/${AppCodeBuildProject}/history'
 
+
   PipelineCodeBuildProject:
     Description: 'Pipeline CodeBuild project URL'
     Value: !Sub 'https://console.aws.amazon.com/codesuite/codebuild/projects/${PipelineCodeBuildProject}/history'
