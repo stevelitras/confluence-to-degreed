@@ -156,28 +156,6 @@ Resources:
           ERROR_TOPIC: !Ref errorTopic
 
 
-  allPages:
-    Type: 'AWS::Serverless::Function'
-    Description: Creates the Batch List of Page batches to retrieve from the wiki site.
-    Properties:
-      Handler: all_pages.lambda_handler
-      Runtime: python3.7
-      CodeUri: ../functions/
-      Description: 'Function to execute integration actions'
-      MemorySize: 1024
-      Timeout: 900
-      Role: !GetAtt wiki2DegreedExecution.Arn
-      VpcConfig:
-        SubnetIds: !Ref Subnets
-        SecurityGroupIds:
-          - !Ref dummySecGroup
-      Environment:
-        Variables:
-          SSMPATHROOT: !Ref SSMPathRoot
-          SSMKEY: !GetAtt wikiKey.Arn
-          ERROR_TOPIC: !Ref errorTopic
-          RESULTS_BUCKET: !Ref resultsBucket
-
   listSpaces:
     Type: 'AWS::Serverless::Function'
     Description: Gets the Wiki "Space" whitelist from dynamodb for passing on to map state.
@@ -221,29 +199,6 @@ Resources:
           SSMKEY: !GetAtt wikiKey.Arn
           ERROR_TOPIC: !Ref errorTopic
           RESULTS_BUCKET: !Ref resultsBucket
-
-  allPagesHandler:
-    Type: 'AWS::Serverless::Function'
-    Description: Creates the Batch List of Page batches to retrieve from the wiki site.
-    Properties:
-      Handler: all_pages_handler.lambda_handler
-      Runtime: python3.7
-      CodeUri: ../functions/
-      Description: 'Function to execute integration actions'
-      MemorySize: 512
-      Timeout: 900
-      Role: !GetAtt wiki2DegreedExecution.Arn
-      VpcConfig:
-        SubnetIds: !Ref Subnets
-        SecurityGroupIds:
-          - !Ref dummySecGroup
-      Environment:
-        Variables:
-          SSMPATHROOT: !Ref SSMPathRoot
-          SSMKEY: !GetAtt wikiKey.Arn
-          ERROR_TOPIC: !Ref errorTopic
-          RESULTS_BUCKET: !Ref resultsBucket
-
 
   degreedHandler:
     Type: 'AWS::Serverless::Function'
@@ -354,45 +309,6 @@ Resources:
                  "Type": "Parallel",
                  "End": true,
                  "Branches": [
-                   {
-                     "StartAt": "AllPages",
-                     "States": {
-                       "AllPages": {
-                         "Type": "Task",
-                         "Resource": "${allPages.Arn}",
-                         "Next": "AllPagesRetrieve"
-                       },
-
-                       "AllPagesRetrieve": {
-                         "Type": "Map",
-                         "InputPath": "$",
-                         "MaxConcurrency": 3,
-                         "Iterator": {
-                           "StartAt": "AllPagesHandler",
-                           "States": {
-
-                             "AllPagesHandler": {
-                               "Type": "Task",
-                               "Resource": "${allPagesHandler.Arn}",
-                               "Retry": [ {
-                                   "ErrorEquals": ["Lambda.Unknown"],
-                                   "IntervalSeconds": 300,
-                                   "MaxAttempts": 3,
-                                   "BackoffRate": 2.0
-                               } ],
-                               "Next": "TempWait"
-                             },
-                             "TempWait": {
-                               "Type": "Wait",
-                               "Seconds": 30,
-                               "End": true
-                             }
-                           }
-                         },
-                         "End": true
-                       }
-                     }
-                   },
                    {
                      "StartAt": "ListSpaces",
                      "States": {
