@@ -321,7 +321,7 @@ Resources:
                        "SpaceHandler": {
                          "Type": "Map",
                          "InputPath": "$",
-                         "MaxConcurrency": 3,
+                         "MaxConcurrency": 2,
                          "Iterator": {
                            "StartAt": "spaceHandler",
                            "States": {
