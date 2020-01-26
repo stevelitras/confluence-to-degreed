@@ -67,24 +67,24 @@ def getWikiPages(config, event):
         max_labels = max(max_labels, label_count)
     content.append(foo)
     logging.debug("Result URL: " + resurl)
-    logging.info("Content: " + json.dumps(foo))
+    logging.debug("Content: " + json.dumps(foo))
 
   mfields = ["ContentID", "url", "ContentType", "Title", "Owners"]
 
   m_iter = 1
   while(m_iter <= label_top):
     topic = "Topic" + str(m_iter)
-    logging.info("Topic: " + topic)
+    logging.debug("Topic: " + topic)
     mfields.append(topic)
     m_iter += 1
-  logging.info("Fields: " + json.dumps(mfields))
+  logging.debug("Fields: " + json.dumps(mfields))
   targ_file = tempfile.NamedTemporaryFile(delete=False)
 
   with open(targ_file.name, mode='w') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=mfields)
     #writer.writeheader()
     for record in content:
-      logging.info("Record: " + json.dumps(record))
+      logging.debug("Record: " + json.dumps(record))
       writer.writerow(record)
 
   response = s3.upload_file(targ_file.name, os.environ['RESULTS_BUCKET'], "spaces/" + space + ".csv")
@@ -120,7 +120,8 @@ def getWikiPagination(config, url):
         murl = url
       logging.info("MURL: " + murl)
       o = get_url(murl, auth=HTTPBasicAuth(config['wiki']['username'], config['wiki']['passwd']))
-      logging.info("Response: " + json.dumps(o.json()))
+      logging.info("Request Response: %d, %s" % (o.status_code, o.reason))
+      logging.debug("Response: " + json.dumps(o.json()))
       response = o.json()
       results = response['results']
       for result in results:
@@ -138,7 +139,8 @@ def lambda_handler(event, context):
   logging.debug("Config: " + json.dumps(config))
   logging.info("Event: " + json.dumps(event))
   url_list = getWikiPages(config, event)
-  logging.info("Page List Params: " + json.dumps(url_list))
+  return url_list
+  #logging.info("Page List Params: " + json.dumps(url_list))
   #wiki_content = getWikiPages(config)
   #degreed_content = getDegreedArticles(config)
 
