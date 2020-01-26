@@ -110,28 +110,31 @@ def getWikiPages(config, event):
 
 def getWikiPagination(config, url):
 
-    first_time=True
-    next_url = ""
-    while (first_time == True) or (next_url != ""):
-      first_time = False
-      if(next_url != ''):
-        murl = next_url
-      else:
-        murl = url
-      logging.info("MURL: " + murl)
-      o = get_url(murl, auth=HTTPBasicAuth(config['wiki']['username'], config['wiki']['passwd']))
-      logging.info("Request Response: %d, %s" % (o.status_code, o.reason))
-      logging.debug("Response: " + json.dumps(o.json()))
-      response = o.json()
-      results = response['results']
-      logging.info("Retrieved: %d records" % len(results))
-      for result in results:
-        yield result
-      if ("_links" in response) and ("next" in response['_links']):
-        next_url = response['_links']['base'] + response['_links']['next']
-      else:
-        next_url = ""
-      logging.info("First Time: " + str(first_time) + " - Next URL: " + next_url)
+  total_pages = 0
+  first_time=True
+  next_url = ""
+  while (first_time == True) or (next_url != ""):
+    first_time = False
+    if(next_url != ''):
+      murl = next_url
+    else:
+      murl = url
+    logging.info("MURL: " + murl)
+    o = get_url(murl, auth=HTTPBasicAuth(config['wiki']['username'], config['wiki']['passwd']))
+    logging.info("Request Response: %d, %s" % (o.status_code, o.reason))
+    logging.debug("Response: " + json.dumps(o.json()))
+    response = o.json()
+    results = response['results']
+    logging.info("Retrieved: %d records" % len(results))
+    total_pages += len(results)
+    for result in results:
+      yield result
+    if ("_links" in response) and ("next" in response['_links']):
+      next_url = response['_links']['base'] + response['_links']['next']
+    else:
+      next_url = ""
+    logging.info("First Time: " + str(first_time) + " - Next URL: " + next_url)
+  logging.info("Total Results: %d" % total_pages)
 
 
 def lambda_handler(event, context):
