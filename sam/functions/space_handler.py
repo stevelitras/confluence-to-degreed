@@ -124,6 +124,7 @@ def getWikiPagination(config, url):
       logging.debug("Response: " + json.dumps(o.json()))
       response = o.json()
       results = response['results']
+      logging.info("Retrieved: %d records" % len(results))
       for result in results:
         yield result
       if ("_links" in response) and ("next" in response['_links']):
