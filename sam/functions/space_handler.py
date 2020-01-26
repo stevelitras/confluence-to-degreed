@@ -139,7 +139,7 @@ def lambda_handler(event, context):
   logging.debug("Config: " + json.dumps(config))
   logging.info("Event: " + json.dumps(event))
   url_list = getWikiPages(config, event)
-  return url_list
+  #return url_list
   #logging.info("Page List Params: " + json.dumps(url_list))
   #wiki_content = getWikiPages(config)
   #degreed_content = getDegreedArticles(config)
