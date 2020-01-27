@@ -203,68 +203,99 @@ def req_check (athena, qid):
 
 # athena_query(query) executes the specified query and returns the
 # resulting rows.
-def athena_query(query):
+def athena_query(config, query):
 
   # Get AWS Account and Region runtime information
   try:
     aws_account = boto3.client('sts').get_caller_identity().get('Account')
   except Exception as e:
-    print("Get Account Info Error: ", e)
-  if ("DEBUG" in os.environ): print("AWS Account: " + aws_account)
+    logging.error("Get Account Info Error: %s" % e)
+  logging.debug("AWS Account: %s" % aws_account)
   try:
     aws_region = boto3.session.Session().region_name
   except botocore.exceptions.ClientError as e:
-    print("Get Region Info Error: ", e)
-  if ("DEBUG" in os.environ): print("AWS Region: " + aws_region)
+    logging.errors("Get Region Info Error: %s" % e)
+  logging.debug("AWS Region: %s" % aws_region)
 
   output_location = "s3://aws-athena-results-" + aws_account + "-" + aws_region + "/"
-  if ("DEBUG" in os.environ): print("Output Location: " + output_location)
+  logging.debug("Output Location: %s" % output_location)
   athena = boto3.client('athena')
 
   try:
     create_response = athena.start_query_execution(
       QueryString=query,
       QueryExecutionContext={
-        'Database': os.environ['ATHENA_DB']
+        'Database': config['general']['athena_db']
       },
       ResultConfiguration={
         'OutputLocation': output_location
       }
     )
   except botocore.exceptions.ClientError as e:
-    print("Athena Query Execution Error: ", e)
-    message = "Athena Query Execution Error - Query Failed: " + query + " Error: " + str(e)
+    logging.error("Athena Query Execution Error: %s" % e)
+    message = "Athena Query Execution Error - Query Failed: %s, Error: %s" % (query, e)
     sns.publish(TopicArn=error_topic, Message=message)
+    slack_notify(config,message)
 
-  if ("DEBUG" in os.environ): print("Response")
-  if ("DEBUG" in os.environ): print(create_response)
+  logging.debug("Response: %s" % create_response)
 
   try:
     qid = create_response.get("QueryExecutionId")
   except botocore.exceptions.ClientError as e:
-    print("Get Athena QID Error: ", e)
-    message = "Athena Error - Get ID Failed: " + query + " Error: " + str(e)
+    logging.info("Get Athena QID Error: %s" % e)
+    message = "Athena Error - Get ID Failed: %s, Error: %s" % (query, e)
     sns.publish(TopicArn=error_topic, Message=message)
+    slack_notify(config,message)
 
-  print("Checking Create Query: " + str(qid))
+
+  logging.info("Checking Create Query: %s" % qid)
 
   response = req_check(athena, qid)
   if ( response == "SUCCEEDED"):
-    print("Query Succeeded")
+    logging.info("Query Succeeded")
   else:
-    print ("Athena Query Failed with message: " + response )
-    message = "Athena Query check Error - Query Failed: " + query + " - Response: " + response + " - Error: " + str(e)
+    logging.error("Athena Query Failed with message: %s" % response)
+    message = "Athena Query check Error - Query Failed: %s, Response: %s" % (query, response)
     sns.publish(TopicArn=error_topic, Message=message)
+    slack_notify(config,message)
 
-  try:
-    response = athena.get_query_results(
-      QueryExecutionId=qid,
-      MaxResults=1000
-    )
-  except botocore.exceptions.ClientError as e:
-    print("Athena get Results Error: ", e)
-    message = "Athena Query getResults Error - Query Failed: " + query + " Error: " + str(e)
-    sns.publish(TopicArn=error_topic, Message=message)
+  next = True
+  results = []
+  iteration = 0
+  while next:
+    try:
+      if next == True:
+        response = athena.get_query_results(
+          QueryExecutionId=qid,
+          MaxResults=1000
+        )
+      elif next != False:
+        response = athena.get_query_results(
+          QueryExecutionId=qid,
+          NextToken=next,
+          MaxResults=1000
+        )
+    except botocore.exceptions.ClientError as e:
+      logging.error("Athena get Results Error: %s" % e)
+      message = "Athena Query getResults Error - Query Failed: %s, Error: %s" % (query, e)
+      sns.publish(TopicArn=error_topic, Message=message)
+      slack_notify(config,message)
 
-  print ("LEN: ", len(response['ResultSet']['Rows']))
-  return( response['ResultSet']['Rows'] )
+    if 'ResultSet' in response and "Rows" in response['ResultSet']:
+      logging.debug ("LEN: %d" % len(response['ResultSet']['Rows']))
+      if iteration > 0:
+        response['ResultSet']['Rows'].pop(0)
+      else:
+        iteration += 1
+      results = results + response['ResultSet']['Rows']
+    if 'NextToken' in response:
+      next = response['NextToken']
+    else:
+      next = False
+
+  if len(results) > 0:
+    logging.debug("Results: %s" % results)
+    return results
+  else:
+    logging.debug("No Rows Found")
+    return []
