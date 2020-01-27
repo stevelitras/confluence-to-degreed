@@ -225,7 +225,7 @@ def athena_query(config, query):
     create_response = athena.start_query_execution(
       QueryString=query,
       QueryExecutionContext={
-        'Database': config['general']['athena_db']
+        'Database': config['athena_db']
       },
       ResultConfiguration={
         'OutputLocation': output_location

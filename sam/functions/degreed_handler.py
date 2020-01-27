@@ -91,7 +91,7 @@ def getDegreedArticles(config):
   s3 = boto3.client('s3')
   response = s3.upload_file(targ_file.name, os.environ['RESULTS_BUCKET'], "degreed/articles.csv")
   logging.debug("S3 Response: " + json.dumps(response))
-  config['general']['athena_db'] = "confluencetodegreed"
+  config['athena_db'] = "confluencetodegreed"
   aquery = "CREATE DATABASE IF NOT EXISTS confluencetodegreed"
   results = athena_query(config, aquery)
   logging.debug("Results: " + json.dumps(results))
