@@ -5,6 +5,7 @@ import hashlib
 import sys
 import tempfile
 import csv
+import pysftp
 from collections import OrderedDict
 from requests.auth import HTTPBasicAuth
 
@@ -48,7 +49,7 @@ def lambda_handler(event, context):
       for hdr in tblhdrs_meta:
         fieldnames.append(hdr['VarCharValue'])
 
-      filename = "Content_Update_File_%s.csv" % date.today().isoformat().replace('-','')
+      filename = "STEVES_TESTING_File_%s.csv" % date.today().isoformat().replace('-','')
 
       with open("/tmp/%s" % filename, 'w') as fp:
 
@@ -69,6 +70,16 @@ def lambda_handler(event, context):
               row_dict[fieldnames[itm]] = ""
           logging.debug("ROW DICT: %s", json.dumps(row_dict))
           writer.writerow(row_dict)
+      
+      if "degreed" in config and "sftp" in config['degreed']:
+        sftpconf = config['degreed']['sftp']
+        cnopts = pysftp.CnOpts()
+        cnopts.hostkeys = None
+        os.chdir("/tmp")
+        with pysftp.Connection(sftpconf['host'], username=sftpconf['username'], password=sftpconf['password'],
+                               cnopts=cnopts) as sftp:
+          with sftp.cd('inbound'):
+            sftp.put(filename)
           
   results = athena_query(config, pathway_sql)
   
