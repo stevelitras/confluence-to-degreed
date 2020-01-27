@@ -42,6 +42,7 @@ def getWikiPages(config, event):
     # NEED TO SERIALIZE FOR CSV
     foo = OrderedDict()
     foo["ContentID"] = content_id
+    foo['id'] = result['id']
     foo["url"] = resurl
     foo["ContentType"] = "article"
     foo["Title"] = result['title']
@@ -69,7 +70,7 @@ def getWikiPages(config, event):
     logging.debug("Result URL: " + resurl)
     logging.debug("Content: " + json.dumps(foo))
 
-  mfields = ["ContentID", "url", "ContentType", "Title", "Owners"]
+  mfields = ["ContentID", "id", "url", "ContentType", "Title", "Owners"]
 
   m_iter = 1
   while(m_iter <= label_top):
