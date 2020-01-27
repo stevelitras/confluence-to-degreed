@@ -395,12 +395,12 @@ Resources:
               },
               "RunContentUpdate": {
                 "Type": "Task",
-                "Resource": "${generateContentFile.Arn},
+                "Resource": "${generateContentFile.Arn}",
                 "Next": "RunEmailNotify"
               },
               "RunEmailNotify": {
                 "Type": "Task",
-                "Resource": "${emailNotify.Arn},
+                "Resource": "${emailNotify.Arn}",
                 "End": true
               }
             }
