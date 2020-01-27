@@ -52,7 +52,7 @@ def lambda_handler(event, context):
 
       with open("/tmp/%s" % filename, 'w') as fp:
 
-        logging.info("Fieldnames: %s" % fieldnames)
+        logging.debug("Fieldnames: %s" % fieldnames)
         writer = csv.DictWriter(fp, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
         writer.writeheader()
 
@@ -60,14 +60,14 @@ def lambda_handler(event, context):
           row_dict = OrderedDict()
           row = rowcont['Data']
 
-          logging.info("Row: %s" % row)
+          logging.debug("Row: %s" % row)
 
           for itm in range(0, len(row)):
             if 'VarCharValue' in row[itm]:
               row_dict[fieldnames[itm]] = row[itm]['VarCharValue']
             else:
               row_dict[fieldnames[itm]] = ""
-          logging.info("ROW DICT: %s", json.dumps(row_dict))
+          logging.debug("ROW DICT: %s", json.dumps(row_dict))
           writer.writerow(row_dict)
           
   results = athena_query(config, pathway_sql)
@@ -75,7 +75,7 @@ def lambda_handler(event, context):
   logging.debug("Results: %s" % results)
   logging.info("Result Count: %d" % len(results))
   if (len(results) < 2):
-    logging.info("No Data Found - No File being Generated")
+    logging.info("No Data Found - No emails to Send")
   else:
     obj_meta = results.pop(0)['Data']
     rows = results
@@ -83,7 +83,7 @@ def lambda_handler(event, context):
 
     logging.debug("Return from query: %s" % json.dumps(rows))
     if (len(rows) <= 1):
-      logging.info("No Data Found - No File being Generated")
+      logging.info("No Data Found - No emails to send")
     else:
       fieldnames = []
       resout = []
