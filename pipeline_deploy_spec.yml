@@ -4,18 +4,18 @@ phases:
   install:
     commands:
       - echo Entered the install phase...
-#      - apt-get update -y
-#      - apt-get install -y git zip gzip tar python-setuptools python-dev build-essential realpath
+      - apt-get update -y
+      - apt-get install -y git zip gzip tar python-setuptools python-dev build-essential realpath
       # Upgrade pip
-#      - pip install --upgrade pip
+      - pip install --upgrade pip
       # Upgrade to the latest version of awscli
       #- pip install --upgrade awscli
       # If the latest version of the awscli is not working you can use a specific version
 #      - pip install awscli==1.16.141
       # Purely informational
-#      - aws --version
+      - aws --version
   build:
     commands:
       - echo Updating pipeline...
       # commenting out to speed up build for the moment...
-      #- sh deploy/pipeline.sh -n ${STACK_NAME} -e prd
+      - sh deploy/pipeline.sh -n ${STACK_NAME} -e prd
