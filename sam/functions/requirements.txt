@@ -2,3 +2,5 @@ backoff
 requests
 jinja2
 slackclient<2.0
+pysftp
+sendgrid==6.0.4
