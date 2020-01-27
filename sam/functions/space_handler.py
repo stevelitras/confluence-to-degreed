@@ -90,9 +90,9 @@ def getWikiPages(config, event):
 
   response = s3.upload_file(targ_file.name, os.environ['RESULTS_BUCKET'], "spaces/" + space + ".csv")
   logging.debug("S3 Response: " + json.dumps(response))
-  os.environ['ATHENA_DB'] = "confluencetodegreed"
+  config['general']['athena_db'] = "confluencetodegreed"
   aquery = "CREATE DATABASE IF NOT EXISTS confluencetodegreed"
-  results = athena_query(aquery)
+  results = athena_query(config, aquery)
   logging.debug("Results: " + json.dumps(results))
   aquery = "CREATE EXTERNAL TABLE IF NOT EXISTS `wiki_spaces` ("
   for field in mfields:
@@ -105,7 +105,7 @@ def getWikiPages(config, event):
   aquery += "LOCATION 's3://" + os.environ['RESULTS_BUCKET'] + "/spaces/'"
 
   logging.info("Athena Query: " + aquery)
-  rows = athena_query(aquery)
+  rows = athena_query(config, aquery)
   logging.debug("Query Results: " + json.dumps(rows))
   return content
 
