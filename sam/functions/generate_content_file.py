@@ -69,3 +69,39 @@ def lambda_handler(event, context):
               row_dict[fieldnames[itm]] = ""
           logging.info("ROW DICT: %s", json.dumps(row_dict))
           writer.writerow(row_dict)
+          
+  results = athena_query(config, pathway_sql)
+  
+  logging.debug("Results: %s" % results)
+  logging.info("Result Count: %d" % len(results))
+  if (len(results) < 2):
+    logging.info("No Data Found - No File being Generated")
+  else:
+    obj_meta = results.pop(0)['Data']
+    rows = results
+
+
+    logging.debug("Return from query: %s" % json.dumps(rows))
+    if (len(rows) <= 1):
+      logging.info("No Data Found - No File being Generated")
+    else:
+      fieldnames = []
+      resout = []
+      for hdr in obj_meta:
+        fieldnames.append(hdr['VarCharValue'])
+        
+      for rowcont in rows:
+        row_dict = OrderedDict()
+        row = rowcont['Data']
+
+        logging.info("Row: %s" % row)
+
+        for itm in range(0, len(row)):
+          if 'VarCharValue' in row[itm]:
+            row_dict[fieldnames[itm]] = row[itm]['VarCharValue']
+          else:
+            row_dict[fieldnames[itm]] = ""
+        logging.info("ROW DICT: %s", json.dumps(row_dict))
+        resout.append(row_dict)
+      
+      return(resout)
