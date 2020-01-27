@@ -245,6 +245,28 @@ Resources:
           ERROR_TOPIC: !Ref errorTopic
           RESULTS_BUCKET: !Ref resultsBucket
           
+  emailNotify:
+    Type: 'AWS::Serverless::Function'
+    Description: Retrieve wiki content metadata from the degreed site.
+    Properties:
+      Handler: email_notify.lambda_handler
+      Runtime: python3.7
+      CodeUri: ../functions/
+      Description: 'Function to execute integration actions'
+      MemorySize: 1024
+      Timeout: 900
+      Role: !GetAtt wiki2DegreedExecution.Arn
+      VpcConfig:
+        SubnetIds: !Ref Subnets
+        SecurityGroupIds:
+          - !Ref dummySecGroup
+      Environment:
+        Variables:
+          SSMPATHROOT: !Ref SSMPathRoot
+          SSMKEY: !GetAtt wikiKey.Arn
+          ERROR_TOPIC: !Ref errorTopic
+          RESULTS_BUCKET: !Ref resultsBucket  
+
   CloudWatchErrorAlarmwiki2Degreed:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -370,6 +392,16 @@ Resources:
                      }
                    }
                  ]
+              },
+              "RunContentUpdate": {
+                "Type": "Task",
+                "Resource": "${generateContentFile.Arn},
+                "Next": "RunEmailNotify"
+              },
+              "RunEmailNotify": {
+                "Type": "Task",
+                "Resource": "${emailNotify.Arn},
+                "End": true
               }
             }
           }
