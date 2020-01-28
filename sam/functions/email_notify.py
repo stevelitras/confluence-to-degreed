@@ -93,6 +93,7 @@ def lambda_handler(event, context):
         params['to'] = "des.learning.service.admins@autodesk.com"
       else:
         params['to'] = record['send_to']
+
       params['cc'] = "des.learning.service.admins@autodesk.com"
       
       # Subject and Body are expected to be jinja2 templates, using data from the record object
