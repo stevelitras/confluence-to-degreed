@@ -49,7 +49,7 @@ def send_email(config, params):
   mail = Mail(from_email=params['from'],
               subject=params['subject'],
               to_emails=to_mail,
-              html_content=params['template'])
+              html_content=params['body'])
 
   try:
     response = sg.send(mail)
@@ -63,6 +63,7 @@ def send_email(config, params):
 def lambda_handler(event, context):
   config = getParamInfo()
   template_values(config,config,tokens)
+  logging.info("Config: %s" % json.dumps(config))
   
   subject_template = "Content Deleted from Degreed Pathway: {{ record.pathway_title }}"
   body_template = "<P>Hi - </P><P>You are receiving this email because you are the creator of the Degreed Pathway: {{ record.pathway_title }}, and one of the lessons in that pathway is a wiki page that has been removed: {{ record.wiki_url }}. Please make any necessary changes to the pathway at your earliest convenience.</P><P>Thanks,<br>The Learning Admins</P>"
