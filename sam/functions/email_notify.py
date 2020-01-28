@@ -84,7 +84,6 @@ def lambda_handler(event, context):
   
   logging.debug("Event: %s" % json.dumps(event))
   # If we've not gotten a list of dicts, the event is not in the right format.
-  logging.info("List Element: %s" % type(event[0]))
   if not isinstance(event, list) or not isinstance(event[0], dict):
     logging.error("Event is not a list - incorrect format for processing: %s" % json.dumps(event))
   else:
@@ -94,7 +93,7 @@ def lambda_handler(event, context):
       
       # set up the to field from the record, and the cc field
       
-      params['to'] = "steve.litras@autodesk.com"
+      params['to'] = record['send_to']
       params['cc'] = "des.learning.service.admins@autodesk.com"
       
       # Subject and Body are expected to be jinja2 templates, using data from the record object
