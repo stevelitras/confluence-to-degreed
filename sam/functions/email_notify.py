@@ -37,7 +37,8 @@ def send_email(config, params):
     import urllib2 as urllib
 
   if "sendgrid" not in config or "api_key" not in config['sendgrid']:
-    raise("No Sendgrid API Key in Parameters")
+    logging.error("No Sendgrid API Key in Parameters")
+    return
   logging.debug("Using APIKEY: %s" % config['sendgrid']['api_key'])
   sg = SendGridAPIClient(config['sendgrid']['api_key'])
 
