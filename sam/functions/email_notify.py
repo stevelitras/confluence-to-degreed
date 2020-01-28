@@ -74,8 +74,14 @@ def lambda_handler(event, context):
   logging.debug("Config: %s" % json.dumps(config))
   
   # Set up the email templates. 
-  subject_template = "TESTING: Content Deleted from Degreed Pathway: {{ record.pathway_title }}"
-  body_template = "<P>TESTING, PLEASE IGNORE</P><P>Hi - </P><P>You are receiving this email because you are the creator of the Degreed Pathway: {{ record.pathway_title }}, and one of the lessons in that pathway is a wiki page that has been removed: {{ record.wiki_url }}. Please make any necessary changes to the pathway at your earliest convenience.</P><P>Thanks,<br>The Learning Admins</P>"
+  if "dry_run" in config:
+    subject_template = "TESTING - "
+    body_template = "<P>TESTING, PLEASE IGNORE</P>"
+  else:
+    subject_template = ""
+    body_template = ""
+  subject_template = subject_template + "Content Deleted from Degreed Pathway: {{ record.pathway_title }}"
+  body_template = body_template + "<P>Hi - </P><P>You are receiving this email because you are the creator of the Degreed Pathway: {{ record.pathway_title }}, and one of the lessons in that pathway is a wiki page that has been removed: {{ record.wiki_url }}. Please make any necessary changes to the pathway at your earliest convenience.</P><P>Thanks,<br>The Learning Admins</P>"
  
 
   
