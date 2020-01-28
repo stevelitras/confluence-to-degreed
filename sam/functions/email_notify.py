@@ -25,3 +25,5 @@ root.addHandler(handler)
 def lambda_handler(event, context):
   config = getParamInfo()
   template_values(config,config,tokens)
+  
+  logging.info("Event: %s" % json.dumps(event))
