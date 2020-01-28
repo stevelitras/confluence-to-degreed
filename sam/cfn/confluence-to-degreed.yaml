@@ -351,7 +351,7 @@ Resources:
             "States": {
               "RunAll": {
                  "Type": "Parallel",
-                 "End": true,
+                 "Next": "RunContentUpdate",
                  "Branches": [
                    {
                      "StartAt": "ListSpaces",
