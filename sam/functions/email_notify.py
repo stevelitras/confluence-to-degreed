@@ -1,13 +1,10 @@
 from utils import *
 import logging
 import json
-#import hashlib
 import sys
-#import tempfile
 import csv
 import pysftp
 from collections import OrderedDict
-#from requests.auth import HTTPBasicAuth
 from jinja2 import Template
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
@@ -92,8 +89,10 @@ def lambda_handler(event, context):
       logging.info("Sending email to %s, about pathway %s and url %s" % (record['send_to'],record['pathway_title'],record['wiki_url']))
       
       # set up the to field from the record, and the cc field
-      
-      params['to'] = record['send_to']
+      if ("dry_run" in config):
+        params['to'] = "des.learning.service.admins@autodesk.com"
+      else:
+        params['to'] = record['send_to']
       params['cc'] = "des.learning.service.admins@autodesk.com"
       
       # Subject and Body are expected to be jinja2 templates, using data from the record object
