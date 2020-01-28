@@ -31,4 +31,4 @@ def lambda_handler(event, context):
     logging.error("Event is not a list - incorrect format for processing: %s" % json.dumps(event))
   else:
     for record in event:
-      logging.info("Would send email to %s, about pathway %s and url %s" % (record.send_to,record.pathway_title,record.wiki_url))
+      logging.info("Would send email to %s, about pathway %s and url %s" % (record['send_to'],record['pathway_title'],record['wiki_url']))
