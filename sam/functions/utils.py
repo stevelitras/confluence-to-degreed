@@ -24,10 +24,12 @@ sleeptime=2
 error_topic = os.environ['ERROR_TOPIC']
 sns = boto3.client('sns')
 
+# Set up a ParamError Exception to throw if we have any error
+# pulling SSM params.
 class ParamError(Exception):
   pass
 
-# slack_notify(text) sends the specified text to the slack channel
+# slack_notify(config, text) sends the specified text to the slack channel
 # specified in the SLACK_CHANNEL environment variable, using the
 # SLACK_TOKEN environment variable. If either of those as missing,
 # it skips the slack message and logs it being missing.
@@ -81,7 +83,7 @@ def get_url(*args, **kwargs):
 def post_url(*args, **kwargs):
     return requests.post(*args, **kwargs)
 
-# Decorate post requests with backoff, set up to do exponential backoff retries
+# Decorate put requests with backoff, set up to do exponential backoff retries
 @backoff.on_exception(backoff.expo,
                       requests.exceptions.RequestException,
                       max_time=300,
@@ -103,7 +105,6 @@ def delete_url(*args, **kwargs):
 
 # hier2dict creates a dictionary out of the parameter hierarchy - it is a recursive function.
 def hier2dict(items, existing_dict, value):
-
   if (len(items) == 1) :
     existing_dict[items[0]] = value
   else:
@@ -141,7 +142,6 @@ def getParamInfo():
 
     data = paramdata['Parameters']
     for param in data:
-      #name = param.get("Name").replace(os.environ['SSMPATHROOT'], "")
       pathcheck = param.get("Name").replace(os.environ['SSMPATHROOT'], "")
       items = pathcheck.split("/")
       if (items[0] == ""):
@@ -151,9 +151,7 @@ def getParamInfo():
         logging.debug("IsInstance: " + str(isinstance(vallist, list)))
         hier2dict(items, outputs, vallist)
       else:
-        #populate_dict(pathcheck.split("/"), outputs)
         hier2dict(items, outputs, param.get("Value"))
-
 
     if ("NextToken" in paramdata):
       nexttoken = paramdata["NextToken"]
@@ -202,7 +200,8 @@ def req_check (athena, qid):
   return mystatus
 
 # athena_query(query) executes the specified query and returns the
-# resulting rows.
+# resulting rows - it handles pagination appropriately, and returns
+# the *entire* result set...
 def athena_query(config, query):
 
   # Get AWS Account and Region runtime information

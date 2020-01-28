@@ -21,8 +21,8 @@ formatter = logging.Formatter('%(asctime)s - %(message)s')
 handler.setFormatter(formatter)
 root.addHandler(handler)
 
-
-
+# This pulls the metadata for all "pages" in the specific space.
+# The "event" contains the space key to retrieve.
 def getWikiPages(config, event):
   content = []
   s3 = boto3.client('s3')
@@ -34,20 +34,27 @@ def getWikiPages(config, event):
   for result in getWikiPagination(config,murl):
     logging.debug("Result: " + json.dumps(result))
     resurl = config['wiki']['uiurl'] + result['_links']['webui']
-    m = hashlib.sha256()
 
+    # the scheme for the content id for degreed is the string "CONFLUENCE-" 
+    # plus a sha256 hash of the URL. This ensures consistency, and allows
+    # data in the internal catalog to be easily identified as Confluence
+    # based.
+    m = hashlib.sha256()
     m.update(resurl.encode("utf-8"))
     content_id = "CONFLUENCE-" + str(m.hexdigest())
 
     # NEED TO SERIALIZE FOR CSV
-    foo = OrderedDict()
-    foo["ContentID"] = content_id
-    foo['id'] = result['id']
-    foo["url"] = resurl
-    foo["ContentType"] = "article"
-    foo["Title"] = result['title']
-    foo["Owners"] = result['history']['lastUpdated']['by']['displayName']
+    temp_dict = OrderedDict()
+    temp_dict["ContentID"] = content_id
+    temp_dict['id'] = result['id']
+    temp_dict["url"] = resurl
+    temp_dict["ContentType"] = "article"
+    temp_dict["Title"] = result['title']
+    temp_dict["Owners"] = result['history']['lastUpdated']['by']['displayName']
 
+    # Grab labels from the wiki metadata, and up to 20 of them
+    # will get added as Topics in the output. This enables the 
+    # "tagging" for skills. 
     if ("labels" in result['metadata']):
       labres = result['metadata']['labels']['results']
       label_count = 1
@@ -63,15 +70,19 @@ def getWikiPages(config, event):
           break
         logging.debug ("Label: " + json.dumps(label))
         topic = "Topic" + str(label_count)
-        foo[topic] = label['name']
+        temp_dict[topic] = label['name']
         label_count += 1
         max_labels = max(max_labels, label_count)
-    content.append(foo)
+        
+    # Add to the content output.
+    content.append(temp_dict)
     logging.debug("Result URL: " + resurl)
-    logging.debug("Content: " + json.dumps(foo))
+    logging.debug("Content: " + json.dumps(temp_dict))
 
+  # Set up the fieldnames for future...
   mfields = ["ContentID", "id", "url", "ContentType", "Title", "Owners"]
 
+  # Topics 1...20
   m_iter = 1
   while(m_iter <= label_top):
     topic = "Topic" + str(m_iter)
@@ -81,16 +92,20 @@ def getWikiPages(config, event):
   logging.debug("Fields: " + json.dumps(mfields))
   targ_file = tempfile.NamedTemporaryFile(delete=False)
 
+  # Write the CSV file
   with open(targ_file.name, mode='w') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=mfields)
-    #writer.writeheader()
     for record in content:
       logging.debug("Record: " + json.dumps(record))
       writer.writerow(record)
 
+  # Upload to the S3 bucket...
   response = s3.upload_file(targ_file.name, os.environ['RESULTS_BUCKET'], "spaces/" + space + ".csv")
   logging.debug("S3 Response: " + json.dumps(response))
-  config['athena_db'] = "confluencetodegreed"
+  
+  if "athena_db" not in config:
+    config['athena_db'] = "confluencetodegreed"
+
   aquery = "CREATE DATABASE IF NOT EXISTS confluencetodegreed"
   results = athena_query(config, aquery)
   logging.debug("Results: " + json.dumps(results))

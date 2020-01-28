@@ -52,7 +52,8 @@ def lambda_handler(event, context):
   to_upsert_sql = "select * from (select 'Article' as ContentType, \"confluencetodegreed\".wiki_spaces.contentid as ContentId, \"confluencetodegreed\".wiki_spaces.url as URL, 'N' as \"Delete\", \"confluencetodegreed\".wiki_spaces.title as Title from \"confluencetodegreed\".wiki_spaces union all select 'Article' as ContentType, \"confluencetodegreed\".degreed_articles.contentid as ContentId, \"confluencetodegreed\".degreed_articles.url as URL, 'Y' as \"Delete\", \"confluencetodegreed\".degreed_articles.title as Title from \"confluencetodegreed\".degreed_articles left join \"confluencetodegreed\".wiki_spaces on \"confluencetodegreed\".degreed_articles.url=\"confluencetodegreed\".wiki_spaces.url where \"confluencetodegreed\".wiki_spaces.contentid is null)"
   
   # Set the Athena DB - this should probably be a parameter instead of hard-coding
-  config['athena_db'] = "confluencetodegreed"
+  if "athena_db" not in config:
+    config['athena_db'] = "confluencetodegreed"
 
   # Run the upsert SQL
   results = athena_query(config, to_upsert_sql)
