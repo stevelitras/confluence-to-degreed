@@ -82,8 +82,6 @@ def lambda_handler(event, context):
     body_template = ""
   subject_template = subject_template + "Content Deleted from Degreed Pathway: {{ record.pathway_title }}"
   body_template = body_template + "<P>Hi - </P><P>You are receiving this email because you are the creator of the Degreed Pathway: {{ record.pathway_title }}, and one of the lessons in that pathway is a wiki page that has been removed: {{ record.wiki_url }}. Please make any necessary changes to the pathway at your earliest convenience.</P><P>Thanks,<br>The Learning Admins</P>"
- 
-
   
   logging.debug("Event: %s" % json.dumps(event))
   # If we've not gotten a list of dicts, the event is not in the right format.
@@ -92,15 +90,22 @@ def lambda_handler(event, context):
   else:
     for record in event:
       params = {}
+      # Set the from address, if specified in the config SSM params
+      if "sendgrid" in config and "from" in config['sendgrid']:
+        params['from'] = config['sendgrid']['from']
+      else: 
+        logging.error("Can Not Send Email - from address not defined in config/sendgrid/from parameter")
+        return    
+      
       logging.info("Sending email to %s, about pathway %s and url %s" % (record['send_to'],record['pathway_title'],record['wiki_url']))
       
       # set up the to field from the record, and the cc field
       if ("dry_run" in config):
-        params['to'] = "des.learning.service.admins@autodesk.com"
+        params['to'] = params['from']
       else:
         params['to'] = record['send_to']
 
-      params['cc'] = "des.learning.service.admins@autodesk.com"
+      params['cc'] = params['from']
       
       # Subject and Body are expected to be jinja2 templates, using data from the record object
       try:
@@ -115,9 +120,7 @@ def lambda_handler(event, context):
         logging.error("Error: %s" % e)
       params['body'] = tpl.render(record=record)
       
-      # Set the from address, if specified in the config SSM params
-      if "sendgrid" in config and "from" in config['sendgrid']:
-        params['from'] = config['sendgrid']['from']
+
       
       # Send the email...
       send_email(config, params)
