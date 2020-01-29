@@ -16,21 +16,18 @@ degreed_lwf -> "Degreed API" as degreedapi: Read all wiki pages in degreed catal
 degreed_lwf -> s3bucket: upload results as CSV (degreed/articles.csv)
 degreed_lwf -> athena: create "degreed_articles" table
 
-step -> "allPages Lambda" as allpages_lwf: Execute AllPages Workflow
-allpages_lwf -> confapi: Get total count of pages in the wiki
-allpages_lwf -> step: split the total count by "wiki/item_limit" and return a list of "start" numbers
-loop "for each startnumber"
-  step-> "allPagesHandler Lambda" as allpages_handler_lwf: run allPagesHandler 
-  allpages_handler_lwf->confapi: retrieve <wiki/item_limit> wiki pages (no expansion, really just need URL and ID), starting with #<start>
-  allpages_handler_lwf-> s3bucket: upload results as CSV (allpages/<startnumber>.csv)
-  allpages_handler_lwf -> athena: create "page_inventory" table
-end
-
-step -> "processResults Lambda" as content_lwf: execute content upload workflow
-content_lwf->athena: select degreed_articles that do **not** have a match in page_inventory, to create a list of "to be deleted" articles
+step -> "generateContentFile Lambda" as content_lwf: execute content upload workflow
+content_lwf->athena: select degreed_articles that do **not** have a match in wiki_spaces, to create a list of "to be deleted" articles
 content_lwf->athena: select degreed_articles that do have a match in wiki_spaces, to create a list of "update" articles
 content_lwf->athena: select wiki_spaces pages that do not show up in degreed, to create a list of "new" articles
 content_lwf->content_lwf: merge lists to create content upload file
 content_lwf->degreedapi: upload content upload file
-content_lwf->step: Success!
+content_lwf->athena: find list of wiki pages marked for deletion that are in one or more pathways
+content_lwf->step: pass list of pathways, creators for the pathways and the urls that are marked for deletion to the next step
+
+step -> "emailNotify Lambda" as email_notify: take deleted url/pathway/creator list as input
+loop "for each URL/Pathway/Creator Tuplet"
+  email_notify-> "SendGrid" as sendgrid: Send email to creator letting them know that content in their pathway is "disappearing"
+  email_notify ->step: Success!
+end
 @enduml
