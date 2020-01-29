@@ -330,6 +330,39 @@ Resources:
               OutputArtifacts:
                 - Name: AppBuildOutput
               RunOrder: 1
+        - Name: test-app-deploy
+          Actions:
+            - Name: CreateChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                Capabilities: CAPABILITY_IAM
+                ChangeSetName: !Sub '${ServiceStackName}-changeset-test'
+                RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/AdskCfnAdministratorAccessExecutionRole'  # ADSK managed role to deploy cloudformation
+                StackName: !Sub '${ServiceStackName}-test'
+                TemplateConfiguration: AppBuildOutput::test-app-parameters.json.tmp
+                TemplatePath: AppBuildOutput::app-sam-output.yaml.tmp
+              InputArtifacts:
+                - Name: AppBuildOutput
+              RunOrder: 1
+            - Name: ExecuteChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                ChangeSetName: !Sub '${ServiceStackName}-changeset-test'
+                RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/AdskCfnAdministratorAccessExecutionRole'  # ADSK managed role to deploy cloudformation
+                StackName: !Sub '${ServiceStackName}-test'
+              OutputArtifacts:
+                - Name: !Sub '${ServiceStackName}ChangeSetTest'
+              RunOrder: 2
 
 Outputs:
   CodePipeline:
