@@ -121,7 +121,7 @@ def lambda_handler(event, context):
       for hdr in tblhdrs_meta:
         fieldnames.append(hdr['VarCharValue'])
       if "dry_run" in config:
-        filename = "STEVES_TESTING_File_%s.csv" % date.today().isoformat().replace('-','')
+        filename = "STEP_FUNCTION_TESTING_File_%s.csv" % date.today().isoformat().replace('-','')
       else:
         filename = "Content_File_%s.csv" % date.today().isoformat().replace('-','')
 
