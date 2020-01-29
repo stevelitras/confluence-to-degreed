@@ -363,6 +363,50 @@ Resources:
               OutputArtifacts:
                 - Name: !Sub '${ServiceStackName}ChangeSetTest'
               RunOrder: 2
+        - Name: prd-app-deploy
+          Actions:
+            - Name: CreateChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                Capabilities: CAPABILITY_IAM
+                ChangeSetName: !Sub '${ServiceStackName}-changeset-prd'
+                RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/AdskCfnAdministratorAccessExecutionRole'  # ADSK managed role to deploy cloudformation
+                StackName: !Sub '${ServiceStackName}-prd'
+                TemplateConfiguration: AppBuildOutput::prd-app-parameters.json.tmp
+                TemplatePath: AppBuildOutput::app-sam-output.yaml.tmp
+              InputArtifacts:
+                - Name: AppBuildOutput
+              RunOrder: 1
+            - Name: DeploymentApproval
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: '1'
+              Configuration:
+                CustomData: !Sub 'A new change set was created for the ${ServiceStackName}-prd stack. Before approving it, you can review the changes by clicking on "Details" in the preceeding step.'
+              RunOrder: 2
+            - Name: ExecuteChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                ChangeSetName: !Sub '${ServiceStackName}-changeset-prd'
+                RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/AdskCfnAdministratorAccessExecutionRole'  # ADSK managed role to deploy cloudformation
+                StackName: !Sub '${ServiceStackName}-prd'
+              OutputArtifacts:
+                - Name: !Sub '${ServiceStackName}ChangeSetPrd'
+              RunOrder: 3
+
+
 
 Outputs:
   CodePipeline:
