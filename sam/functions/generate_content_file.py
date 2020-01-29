@@ -49,9 +49,53 @@ def lambda_handler(event, context):
   template_values(config,config,tokens)
   
   pathway_sql = 'select "learningtools"."adsuserinfo".email as send_to, "confluencetodegreed".degreed_articles.url as wiki_url, "learningtools"."degreed_published_pathway_summary"."title" as "pathway_title" from "confluencetodegreed".degreed_articles left join wiki_spaces on "confluencetodegreed".degreed_articles.url=wiki_spaces.url left join "learningtools"."degreed_published_pathway_details" on "learningtools"."degreed_published_pathway_details"."content_id"="confluencetodegreed".degreed_articles.contentid left join "learningtools"."degreed_published_pathway_summary" on  "learningtools"."degreed_published_pathway_summary"."pathway_id"="learningtools"."degreed_published_pathway_details"."pathway_id" left join "learningtools"."adsuserinfo" on  "learningtools"."degreed_published_pathway_summary"."created_by"=concat("learningtools"."adsuserinfo"."first_name", \' \', "learningtools"."adsuserinfo"."last_name") where wiki_spaces.contentid is null and email is not null'
-  to_upsert_sql = "select * from (select 'Article' as ContentType, \"confluencetodegreed\".wiki_spaces.contentid as ContentId, \"confluencetodegreed\".wiki_spaces.url as URL, 'N' as \"Delete\", \"confluencetodegreed\".wiki_spaces.title as Title from \"confluencetodegreed\".wiki_spaces union all select 'Article' as ContentType, \"confluencetodegreed\".degreed_articles.contentid as ContentId, \"confluencetodegreed\".degreed_articles.url as URL, 'Y' as \"Delete\", \"confluencetodegreed\".degreed_articles.title as Title from \"confluencetodegreed\".degreed_articles left join \"confluencetodegreed\".wiki_spaces on \"confluencetodegreed\".degreed_articles.url=\"confluencetodegreed\".wiki_spaces.url where \"confluencetodegreed\".wiki_spaces.contentid is null)"
+  to_upsert_sql = """
+  select * from (select \"confluencetodegreed\".wiki_spaces.contenttype as ContentType,
+                \"confluencetodegreed\".wiki_spaces.contentid as ContentId, 
+                \"confluencetodegreed\".wiki_spaces.url as URL, 'N' as \"Delete\", 
+                \"confluencetodegreed\".wiki_spaces.title as Title, '' as Summary, 
+                '' as ImageURL, '' as Duration, '' as Language, '' as Provider, 
+                '' as CEU, '' as Format, '' as DurationUnits, '' as \"Publish Date\", 
+                \"confluencetodegreed\".wiki_spaces.owners as Owners, 
+                \"confluencetodegreed\".wiki_spaces.topic1 as Topic1, 
+                \"confluencetodegreed\".wiki_spaces.topic2 as Topic2, 
+                \"confluencetodegreed\".wiki_spaces.topic3 as Topic3, 
+                \"confluencetodegreed\".wiki_spaces.topic4 as Topic4, 
+                \"confluencetodegreed\".wiki_spaces.topic5 as Topic5, 
+                \"confluencetodegreed\".wiki_spaces.topic6 as Topic6, 
+                \"confluencetodegreed\".wiki_spaces.topic7 as Topic7, 
+                \"confluencetodegreed\".wiki_spaces.topic8 as Topic8, 
+                \"confluencetodegreed\".wiki_spaces.topic9 as Topic9, 
+                \"confluencetodegreed\".wiki_spaces.topic10 as Topic10, 
+                \"confluencetodegreed\".wiki_spaces.topic11 as Topic11, 
+                \"confluencetodegreed\".wiki_spaces.topic12 as Topic12, 
+                \"confluencetodegreed\".wiki_spaces.topic13 as Topic13, 
+                \"confluencetodegreed\".wiki_spaces.topic14 as Topic14, 
+                \"confluencetodegreed\".wiki_spaces.topic15 as Topic15, 
+                \"confluencetodegreed\".wiki_spaces.topic16 as Topic16, 
+                \"confluencetodegreed\".wiki_spaces.topic17 as Topic17, 
+                \"confluencetodegreed\".wiki_spaces.topic18 as Topic18, 
+                \"confluencetodegreed\".wiki_spaces.topic19 as Topic19, 
+                \"confluencetodegreed\".wiki_spaces.topic20 as Topic20 
+                from \"confluencetodegreed\".wiki_spaces 
+          union all select 'Article' as ContentType, 
+                \"confluencetodegreed\".degreed_articles.contentid as ContentId, 
+                \"confluencetodegreed\".degreed_articles.url as URL, 'Y' as \"Delete\", 
+                \"confluencetodegreed\".degreed_articles.title as Title,
+                '' as Summary, '' as ImageURL, '' as Duration, '' as Language,
+                '' as Provider, '' as CEU, '' as Format, '' as DurationUnits,
+                '' as \"Publish Date\", '' as Owners, '' as Topic1, '' as Topic2,
+                '' as Topic3, '' as Topic4, '' as Topic5, '' as Topic6, '' as Topic7,
+                '' as Topic8, '' as Topic9, '' as Topic10, '' as Topic11, '' as Topic12,
+                '' as Topic13, '' as Topic14, '' as Topic15, '' as Topic16, '' as Topic17,
+                '' as Topic18, '' as Topic19, '' as Topic20                
+                from \"confluencetodegreed\".degreed_articles 
+              left join \"confluencetodegreed\".wiki_spaces 
+              on \"confluencetodegreed\".degreed_articles.url=\"confluencetodegreed\".wiki_spaces.url 
+              where \"confluencetodegreed\".wiki_spaces.contentid is null)
+              """
   
-  # Set the Athena DB - this should probably be a parameter instead of hard-coding
+  # Set the Athena DB prefers it as a parameter, but will default...
   if "athena_db" not in config:
     config['athena_db'] = "confluencetodegreed"
 
