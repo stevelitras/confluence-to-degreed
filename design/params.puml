@@ -1,5 +1,10 @@
 @startmindmap
 * confluence-to-degreed
+**_ <&lock-unlocked>athena_db
+**_ <&lock-unlocked>dry_run
+** sendgrid
+***_ <&lock-locked>api_key
+***_ <&lock-unlocked>from
 ** slack 
 ***_ <&lock-locked>slack_token
 ***_ <&lock-unlocked>slack_channel

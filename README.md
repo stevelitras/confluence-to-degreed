@@ -26,6 +26,20 @@ Configuration is handled through the SSM parameter store. The Cloud Formation Te
 
 ## Config Options
 
+### misc top level
+
+Name | Type | Content | Caveats 
+---------- | ---------- | ---------- | ---------
+athena_db | String | name of the athena database to use |  
+dry_run | String | if set (with any content in it), it will upload the content file with a bogus name (so it doesn't get processed) and not send the emails to the pathway owners |
+
+### sendgrid container
+
+Name | Type | Content | Caveats 
+---------- | ---------- | ---------- | ---------
+api_key | SecureString | API key to access the sendgrid API |  encoded with the key created by the cloud formation template
+from | String | email address to send emails from (as well as cc) |
+
 ### slack container
 
 Name | Type | Content | Caveats 
