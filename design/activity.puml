@@ -32,11 +32,7 @@ note bottom
 Each space handler retrieves content for 
 that space, and feeds it into a specified CSV file
 that then gets added to an athena DB, creating the
-**"wiki_spaces"** table. It includes 3 links for each
-page: 
-# main url
-# pageID= url, and
-# tinyurl
+**"wiki_spaces"** table. 
 end note
 --> ===P3===
 ===P2===--> [Space #2] "SpaceHandler_2"
@@ -46,34 +42,6 @@ end note
 "SpaceHandler_n"--> ===P3===
 
 
-===P1=== --> "AllPages"
-note right
-Looks up the number of pages in
-the overall wiki store, and divides
-it into jobs based on pagination
-params, then passes those jobs to
-the handlers to retrieve. 
-end note
-
---> ===P4===
-note top #de9c0d
-<color:#5a0dde>Map Step - Default</color>
-<color:#5a0dde>__concurrency=3__</color> 
-end note
---> [Grabs 1st batch] "AllPageHandler_1"
-===P4=== --> [Grabs 2nd batch] "AllPageHandler_2"
-===P4=== --> [Grabs nth batch] "AllPageHandler_n"
-note bottom
-Each AllPageHandler retrieves a batch of urls 
-and feeds it into a specified CSV file 
-(allpages/<batch#>.csv) that then
-gets added to the athena DB as the
-**"page_inventory"** table
-end note
-
-AllPageHandler_1 --> ===P3===
-AllPageHandler_2 --> ===P3===
-AllPageHandler_n --> ===P3===
 
 ===P1=== --> "DegreedHandler"
 note right
@@ -88,8 +56,8 @@ end note
 
 DegreedHandler-->===P3===
 
----> "ProcessResults"
-note bottom
+---> "GenerateContentFile"
+note right
 Processes the results with the following ruleset:
 # Check all urls in the degreed catalog against the page_inventory 
    table - if a page is defined in the degreed catalog, but doesn't 
@@ -108,5 +76,11 @@ SFTP site.
 
 Finally, it will go back and delete all of the generated CSV files,
 prepping for the next run. 
+end note
+
+---> "EmailNotify"
+note left
+Notifies pathway owners (creator) via email of any wiki content in their
+pathway(s) that is being deleted as a part of the run.
 end note
 @enduml
