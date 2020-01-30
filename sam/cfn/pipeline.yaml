@@ -293,7 +293,7 @@ Resources:
               Repo: !Ref GitHubRepo
               Branch: !Ref GitHubBranch
               OAuthToken: !Ref GitHubToken
-              PollForSourceChanges: false
+              PollForSourceChanges: true
             OutputArtifacts:
               - Name: SourceZip
             RunOrder: 1
