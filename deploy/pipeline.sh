@@ -95,23 +95,12 @@ DEPLOY_BUCKET=deploy-${AWS_ACCOUNT}-${AWS_REGION}
 CFN_TEMPLATE_FILE=sam/cfn/pipeline.yaml
 OUTPUT_CFN_TEMPLATE_FILE=${CFN_TEMPLATE_FILE}.tmp
 
-# set tags for the stack, these tags will be propogated to all resources that support tags.
-# Specify your tags as "key=value".
-# Note: These are temporary params (used as placeholders).
-TAG_ADSK_MONIKER="adsk:moniker=${SERVICE_NAME}-${ENVIRONMENT}-${AWS_REGION}"
-TAG_ADSK_SERVICE="adsk:service=${SERVICE_NAME}-${ENVIRONMENT}-${AWS_REGION}"
-TAG_ADSK_ENVIRONMENT="adsk:environment=${ENVIRONMENT}"
-
 # Set some cfn stack parameter overrides here
 GIT_BRANCH='master'
 GIT_USER='stevelitras'
 GIT_REPO='confluence-to-degreed'
 
 echo "GitBranch: $GIT_BRANCH"
-
-# the prefix for the asdk:moniker and adsk:service tags used by the exampole api
-MONIKER_PREFIX='YOUR_MONIKER_PREFIX'
-echo "MonikerPrefix: $MONIKER_PREFIX"
 
 # the name of the service stack name the pipeline will deploy (with "-$env" at the end)
 SERVICE_STACK_NAME='learning-confluence-to-degreed'
@@ -146,10 +135,6 @@ aws cloudformation deploy \
 --s3-bucket "$DEPLOY_BUCKET" \
 --s3-prefix "${S3_PREFIX}" \
 --stack-name "${STACK_NAME}" \
---tags \
-"${TAG_ADSK_MONIKER}" \
-"${TAG_ADSK_SERVICE}" \
-"${TAG_ADSK_ENVIRONMENT}" \
 --parameter-overrides \
 AwsAccountId="${AWS_ACCOUNT}" \
 CfnDeployBucket="${DEPLOY_BUCKET}" \
@@ -161,7 +146,6 @@ GitHubUser="${GIT_USER}" \
 GitHubRepo="${GIT_REPO}" \
 InetSubnets="${INETSUBNETS}" \
 VpcId="${VPC_ID}" \
-MonikerPrefix="${MONIKER_PREFIX}" \
 ServiceStackName="${SERVICE_STACK_NAME}" \
 SSMPathRoot="${SSMPATHROOT}" \
 TemplateFile="${TEMPLATE_FILE}" \

@@ -17,5 +17,6 @@ phases:
   build:
     commands:
       - echo Updating pipeline...
+      - set
       # commenting out to speed up build for the moment...
-      - sh deploy/pipeline.sh -n ${STACK_NAME} -e prd
+      - sh deploy/pipeline.sh -n ${STACK_NAME} -e prd 
