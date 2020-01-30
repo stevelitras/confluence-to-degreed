@@ -26,7 +26,7 @@ if [ "$STACK_NAME" == "" ]; then
   exit 1
 fi
 
-if [ "$GIT_TOKEN" == ""]; then
+if [ "$GIT_TOKEN" == "" ]; then
   echo "GitHub Token not provided"
   exit 1
 fi
