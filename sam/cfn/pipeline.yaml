@@ -297,6 +297,7 @@ Resources:
             OutputArtifacts:
               - Name: SourceZip
             RunOrder: 1
+            
         # Update the pipeline stack here if changes affecting pipeline resources were commited. Doing it here doesn't require manual management of the pipeline stack.
         - Name: pipeline-update
           Actions:
