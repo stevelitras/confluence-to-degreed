@@ -348,8 +348,8 @@ Resources:
       RoleArn: !GetAtt StatesExecutionRole.Arn
       Targets:
         -
-          Arn: !GetAtt confluenceToDegreedStateMachine.Arn
-          Id: !Ref confluenceToDegreedStateMachine
+          Arn: !Ref confluenceToDegreedStateMachine
+          Id: !GetAtt confluenceToDegreedStateMachine.Name
 
   confluenceToDegreedStateMachine:
     Type: "AWS::StepFunctions::StateMachine"
