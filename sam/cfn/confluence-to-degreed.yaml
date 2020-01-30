@@ -129,33 +129,6 @@ Resources:
       AliasName: "alias/wiki-degreed-integration-key"
       TargetKeyId: !Ref wikiKey
 
-  wiki2Degreed:
-    Type: 'AWS::Serverless::Function'
-    Description: Performs Wiki whitelisting
-    Properties:
-      Handler: integrate.lambda_handler
-      Runtime: python3.7
-      CodeUri: ../functions/
-      Description: 'Function to execute integration actions'
-      MemorySize: 1024
-      Timeout: 900
-      Role: !GetAtt wiki2DegreedExecution.Arn
-      Events:
-        Schedule1:
-          Type: Schedule
-          Properties:
-            Schedule: cron(0 13 * * ? *)
-      VpcConfig:
-        SubnetIds: !Ref Subnets
-        SecurityGroupIds:
-          - !Ref dummySecGroup
-      Environment:
-        Variables:
-          SSMPATHROOT: !Ref SSMPathRoot
-          SSMKEY: !GetAtt wikiKey.Arn
-          ERROR_TOPIC: !Ref errorTopic
-
-
   listSpaces:
     Type: 'AWS::Serverless::Function'
     Description: Gets the Wiki "Space" whitelist from dynamodb for passing on to map state.
