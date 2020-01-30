@@ -129,7 +129,7 @@ Resources:
                   - 's3:PutObject'
               - Effect: Allow
                 Action:
-                  - "ecr:CreateRepository"
+                  - "ecr:*"
                 Resource: "*"
               - Effect: Allow
                 Action:
