@@ -239,43 +239,7 @@ Resources:
           SSMKEY: !GetAtt wikiKey.Arn
           ERROR_TOPIC: !Ref errorTopic
           RESULTS_BUCKET: !Ref resultsBucket  
-
-  CloudWatchErrorAlarmwiki2Degreed:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmActions:
-      - !Ref 'TopicARN'
-      AlarmDescription: wiki2Degreed Error Check
-      AlarmName: wiki2Degreed-Errors
-      ComparisonOperator: GreaterThanThreshold
-      EvaluationPeriods: '1'
-      MetricName: Errors
-      Namespace: AWS/Lambda
-      Period: '60'
-      Statistic: Sum
-      Threshold: '0'
-      Dimensions:
-      - Name: FunctionName
-        Value: !Ref wiki2Degreed
-
-  CloudWatchInvokeAlarmwiki2Degreed:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmActions:
-      - !Ref 'TopicARN'
-      AlarmDescription: wiki2Degreed Invoke Check
-      AlarmName: wiki2Degreed-Invokes
-      ComparisonOperator: GreaterThanThreshold
-      EvaluationPeriods: '1'
-      MetricName: Invocations
-      Namespace: AWS/Lambda
-      Period: '60'
-      Statistic: Sum
-      Threshold: '0'
-      Dimensions:
-      - Name: FunctionName
-        Value: !Ref wiki2Degreed
-
+  
   errorTopic:
     Type: "AWS::SNS::Topic"
     Properties:
