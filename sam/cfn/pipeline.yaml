@@ -218,8 +218,6 @@ Resources:
             Value: !Ref CfnDeployBucket
           - Name: GITHUB_TOKEN
             Value: !Ref GitHubToken
-          - Name: MONIKER_PREFIX
-            Value: !Ref MonikerPrefix
           - Name: STACK_NAME
             Value: !Ref AWS::StackName
           - Name: FINAL_STACK_NAME
@@ -249,8 +247,6 @@ Resources:
             Value: !Ref AwsAccountId
           - Name: DEPLOY_BUCKET
             Value: !Ref CfnDeployBucket
-          - Name: MONIKER_PREFIX
-            Value: !Ref MonikerPrefix
           - Name: INETSUBNETS
             Value: !Join [',', !Ref 'InetSubnets']
           - Name: SERVICE_STACK_NAME
