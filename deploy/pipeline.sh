@@ -113,11 +113,6 @@ aws s3api get-bucket-location \
 --region "$AWS_REGION" \
 "s3://${DEPLOY_BUCKET}" 2>&1 >/dev/null
 
-# install sam function/layer requirements
-THIS_SCRIPT=$(realpath  "$0")
-THIS_SCRIPTPATH=$(dirname "${THIS_SCRIPT}")
-"${THIS_SCRIPTPATH}/install_requirements.sh"
-
 # Prepare CloudFormation package
 echo "Packaging deployment artifacts for template..."
 aws cloudformation package \
