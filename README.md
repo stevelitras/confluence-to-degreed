@@ -6,7 +6,10 @@ This repo creates an AWS Step Function that integrates specified content (via a 
 
 # Basic Functionality
 
-The intent of this repo is to provide a mechanism to "integrate" content from a Confluence wiki site to a company's Degreed implementation. It is designed such that only whitelisted "spaces" (via confluence space key) are bulk loaded, but other pages added by the end users via either the degreed UI or the Degreed "Button" browser plugin are also "supported" and updated with metadata from the wiki system (labels, which become topics in the Degreed catalog)
+The intent of this repo is to provide a mechanism to "integrate" content 
+from a Confluence wiki site to a company's Degreed implementation. 
+It is designed such that only whitelisted "spaces" (via confluence space key) are bulk loaded
+with metadata from the wiki system (labels, which become topics in the Degreed catalog, owners,etc)
 
 # Process Sequence Diagram
 
@@ -77,3 +80,15 @@ Name | Type | Content | Caveats
 ---------- | ---------- | ---------- | ---------
 arn | String | the arn to the table. |
 name | String | the name of the table. |
+
+# Debugging
+All of the lambda functions use the standard logging module, and are 
+default set to the INFO level of logging. There is a fair amount of 
+debug logging in each lambda, and that can be "activated" to show up 
+in the cloudwatch logs for each lambda by adding an environment 
+variable called "DEBUG" to the lambda's running environment (this is
+accomplished via the AWS Console configuration page for the lambda
+function). Beware, though, that setting the DEBUG flag will also put
+the boto3 package in debugging mode, and it will generate a LOT of 
+log information, so it's recommended that it's only used for 
+troubleshooting and NOT left in place.
