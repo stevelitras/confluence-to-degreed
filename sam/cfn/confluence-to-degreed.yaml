@@ -327,6 +327,7 @@ Resources:
             Principal:
               Service:
                 - !Sub states.${AWS::Region}.amazonaws.com
+                - events.amazonaws.com
             Action: "sts:AssumeRole"
       Path: "/"
       Policies:
